@@ -62,7 +62,7 @@ function parseArgs(argv: string[]): { projectName: string; targetDir: string } {
   const [projectNameArg] = argv;
   const projectName = projectNameArg ?? "henshusha-video";
   if (projectName.startsWith("-")) {
-    throw new Error("Usage: create-henshu [project-name]");
+    throw new Error("Usage: henshusha [project-name]");
   }
   return {
     projectName,
@@ -81,7 +81,7 @@ export async function createHenshushaProject(argv = process.argv.slice(2)): Prom
 
   const templateSource = await findFirstExisting([
     path.join(packageRoot, "templates", "basic"),
-    path.resolve(process.cwd(), "packages/create-henshu/templates/basic")
+    path.resolve(process.cwd(), "packages/henshusha/templates/basic")
   ]);
   const skillsSource = await findFirstExisting([
     path.join(packageRoot, "skills"),

@@ -1,0 +1,115 @@
+name: Publish henshusha
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/henshusha/**"
+      - "packages/agent-kit/skills/**"
+      - "scripts/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "bun.lock"
+      - ".github/workflows/publish-henshusha.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish if package version is new
+    runs-on: ubuntu-latest
+    env:
+      PACKAGE_NAME: henshusha
+      PACKAGE_DIR: packages/henshusha
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build with Node/pnpm path
+        run: pnpm build
+
+      - name: Build with Bun path
+        run: bun run build:bun
+
+      - name: Read package version
+        id: pkg
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./${PACKAGE_DIR}/package.json').version")
+          NAME=$(node -p "require('./${PACKAGE_DIR}/package.json').name")
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "name=${NAME}" >> "$GITHUB_OUTPUT"
+          test "$NAME" = "$PACKAGE_NAME"
+
+      - name: Check whether version already exists on npm
+        id: exists
+        shell: bash
+        run: |
+          if npm view "${PACKAGE_NAME}@${{ steps.pkg.outputs.version }}" version >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "${PACKAGE_NAME}@${{ steps.pkg.outputs.version }} already exists; skipping publish."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "${PACKAGE_NAME}@${{ steps.pkg.outputs.version }} is new; publishing."
+          fi
+
+      - name: Pack dry run
+        run: npm pack "./${PACKAGE_DIR}" --dry-run
+
+      - name: Local scaffold smoke test
+        shell: bash
+        run: |
+          rm -rf /tmp/henshu-local-smoke
+          mkdir -p /tmp/henshu-local-smoke
+          (cd /tmp/henshu-local-smoke && node "$GITHUB_WORKSPACE/${PACKAGE_DIR}/dist/index.js" demo)
+          test -f /tmp/henshu-local-smoke/demo/.claude/skills/henshusha-render/SKILL.md
+          test -f /tmp/henshu-local-smoke/demo/.codex/skills/henshusha-edit-timeline/SKILL.md
+          test -f /tmp/henshu-local-smoke/demo/.pi/skills/henshusha-analyze-source/SKILL.md
+          test -f /tmp/henshu-local-smoke/demo/timelines/sample.timeline.json
+
+      - name: Publish to npm
+        if: steps.exists.outputs.exists == 'false'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish "./${PACKAGE_DIR}" --access public --provenance
+
+      - name: Verify npx path
+        if: steps.exists.outputs.exists == 'false'
+        shell: bash
+        run: |
+          rm -rf /tmp/henshu-npm-smoke
+          mkdir -p /tmp/henshu-npm-smoke
+          (cd /tmp/henshu-npm-smoke && npx "henshusha@${{ steps.pkg.outputs.version }}" demo)
+          test -f /tmp/henshu-npm-smoke/demo/.claude/skills/henshusha-render/SKILL.md
+
+      - name: Verify bunx path
+        if: steps.exists.outputs.exists == 'false'
+        shell: bash
+        run: |
+          rm -rf /tmp/henshu-bun-smoke
+          mkdir -p /tmp/henshu-bun-smoke
+          (cd /tmp/henshu-bun-smoke && bunx "henshusha@${{ steps.pkg.outputs.version }}" demo)
+          test -f /tmp/henshu-bun-smoke/demo/.codex/skills/henshusha-edit-timeline/SKILL.md

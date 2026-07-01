@@ -29,16 +29,16 @@
       "name": "@henshusha/core",
       "version": "0.0.0",
     },
-    "packages/create-henshu": {
-      "name": "create-henshu",
-      "version": "0.0.0",
-      "bin": {
-        "create-henshu": "./dist/index.js",
-      },
-    },
     "packages/ffmpeg": {
       "name": "@henshusha/ffmpeg",
       "version": "0.0.0",
+    },
+    "packages/henshusha": {
+      "name": "henshusha",
+      "version": "0.1.0",
+      "bin": {
+        "henshusha": "dist/index.js",
+      },
     },
     "packages/remotion": {
       "name": "@henshusha/remotion",
@@ -74,7 +74,7 @@
 
     "@types/node": ["@types/node@22.20.0", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g=="],
 
-    "create-henshu": ["create-henshu@workspace:packages/create-henshu"],
+    "henshusha": ["henshusha@workspace:packages/henshusha"],
 
     "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 

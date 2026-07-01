@@ -6,7 +6,7 @@ MVP skills:
 - `henshusha-edit-timeline` — clean captions, split cues, add highlights, choose render variant.
 - `henshusha-render` — validate timeline and render MP4.
 
-Skills are distributed through `@henshusha/agent-kit` and copied by `create-henshu` into:
+Skills are distributed through `@henshusha/agent-kit` and copied by `henshusha` into:
 
 ```txt
 .claude/skills/

@@ -21,7 +21,7 @@ pnpm dev
 
 ## Product boundary
 
-Do not add a `create-henshu --dev` primary path. `create-henshu` is for users creating a video workspace. Henshusha contributors should clone this repository and use the normal development scripts.
+Do not add a `henshusha --dev` primary path. `henshusha` is for users creating a video workspace. Henshusha contributors should clone this repository and use the normal development scripts.
 
 Generated workspaces may later support upgrades with a command like `henshusha upgrade`, but that is separate from contributor setup.
 
@@ -33,7 +33,7 @@ cd .fixtures/basic-workspace
 # open with claude / codex / pi when local skill copying exists
 ```
 
-Until `create-henshu` is published and fully wired, the fixture is a stable sandbox for checking the expected workspace layout.
+Until `henshusha` is published and fully wired, the fixture is a stable sandbox for checking the expected workspace layout.
 
 ## Bun support
 
@@ -46,3 +46,19 @@ bun run dev:fixture
 ```
 
 The repository keeps scripts package-manager neutral where practical. `pnpm` remains supported for lockfile and npm-publishing workflows, but new contributor scripts should also work under `bun run`.
+
+## Publishing
+
+`henshusha` publishes from GitHub Actions when a push to `main` contains a package version that does not already exist on npm.
+
+Required GitHub secret:
+
+- `NPM_TOKEN` — npm automation token with publish permission for `henshusha`.
+
+Release flow:
+
+1. Update `packages/henshusha/package.json` version.
+2. Merge to `main`.
+3. CI builds with pnpm and Bun, runs scaffold smoke tests, publishes to npm, then verifies both `npx henshusha@<version>` and `bunx henshusha@<version>`.
+
+If the version already exists, CI skips publishing instead of failing.

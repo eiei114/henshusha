@@ -25,9 +25,9 @@ importers:
 
   packages/core: {}
 
-  packages/create-henshu: {}
-
   packages/ffmpeg: {}
+
+  packages/henshusha: {}
 
   packages/remotion: {}
 

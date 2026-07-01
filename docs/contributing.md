@@ -35,3 +35,7 @@ bun run dev
 ```
 
 Do not add package scripts that only work under pnpm unless there is a Bun-compatible path. Do not introduce Bun-only runtime APIs in published packages unless there is a Node-compatible fallback.
+
+## Release notes
+
+For `henshusha`, bump `packages/henshusha/package.json` before merging release changes. CI publishes only when that version is new on npm.
