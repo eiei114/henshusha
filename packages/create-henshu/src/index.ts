@@ -84,7 +84,7 @@ export async function createHenshushaProject(argv = process.argv.slice(2)): Prom
     path.resolve(process.cwd(), "packages/create-henshu/templates/basic")
   ]);
   const skillsSource = await findFirstExisting([
-    path.resolve(packageRoot, "../agent-kit/skills"),
+    path.join(packageRoot, "skills"),
     path.resolve(process.cwd(), "packages/agent-kit/skills")
   ]);
 

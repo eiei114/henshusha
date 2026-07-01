@@ -1,20 +1,21 @@
 {
   "name": "create-henshu",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": false,
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "templates"
+    "templates",
+    "skills"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "bin": {
-    "create-henshu": "./dist/index.js"
+    "create-henshu": "dist/index.js"
   },
   "description": "Create an agent-native Henshusha video editing workspace.",
   "license": "MIT",
