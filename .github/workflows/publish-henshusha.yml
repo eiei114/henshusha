@@ -124,7 +124,18 @@ jobs:
         run: |
           rm -rf /tmp/henshu-npm-smoke
           mkdir -p /tmp/henshu-npm-smoke
-          (cd /tmp/henshu-npm-smoke && npx --yes "henshusha@${{ steps.pkg.outputs.version }}" demo)
+          for attempt in {1..6}; do
+            if (cd /tmp/henshu-npm-smoke && npx --yes "henshusha@${{ steps.pkg.outputs.version }}" demo); then
+              break
+            fi
+            if [ "$attempt" = "6" ]; then
+              exit 1
+            fi
+            echo "npx smoke failed; retrying ($attempt/6)..."
+            rm -rf /tmp/henshu-npm-smoke/demo
+            npm cache clean --force || true
+            sleep 10
+          done
           test -f /tmp/henshu-npm-smoke/demo/.claude/skills/henshusha-render/SKILL.md
           test -f /tmp/henshu-npm-smoke/demo/projects/sample-video/scripts/edit-plan.md
 
@@ -134,7 +145,18 @@ jobs:
         run: |
           rm -rf /tmp/henshu-bun-smoke
           mkdir -p /tmp/henshu-bun-smoke
-          (cd /tmp/henshu-bun-smoke && bunx "henshusha@${{ steps.pkg.outputs.version }}" demo)
+          for attempt in {1..6}; do
+            if (cd /tmp/henshu-bun-smoke && bunx "henshusha@${{ steps.pkg.outputs.version }}" demo); then
+              break
+            fi
+            if [ "$attempt" = "6" ]; then
+              exit 1
+            fi
+            echo "bunx smoke failed; retrying ($attempt/6)..."
+            rm -rf /tmp/henshu-bun-smoke/demo
+            bun pm cache rm || true
+            sleep 10
+          done
           test -f /tmp/henshu-bun-smoke/demo/.codex/skills/henshusha-edit-timeline/SKILL.md
           test -f /tmp/henshu-bun-smoke/demo/projects/sample-video/timelines/main.timeline.json
 

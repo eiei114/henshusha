@@ -1,0 +1,16 @@
+# Keep repository text files stable across Windows/macOS/Linux.
+* text=auto eol=lf
+
+# Binary assets must not be line-ending normalised.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.mp4 binary
+*.mov binary
+*.webm binary
+*.mp3 binary
+*.wav binary
+*.zip binary
+*.tgz binary
