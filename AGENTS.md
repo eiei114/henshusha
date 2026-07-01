@@ -11,7 +11,7 @@ Henshusha is an agent-native video editing workspace starter for Claude Code, Co
 
 - Treat `projects/<project-name>/timelines/*.timeline.json` as the editing source of truth.
 - Keep raw media in each video project's `sources/raw/`; do not rewrite raw source files in-place.
-- ASR providers must be replaceable. Do not hard-code OpenAI Whisper as the only path.
+- Whisper/ASR and TTS are deferred for the MVP; do not make them required for manual render.
 - Render aspect ratio is a job-level choice: 16:9, 9:16, and 1:1 should remain selectable per timeline/job.
 - Agent skills are first-class artifacts, not afterthought prompts.
 

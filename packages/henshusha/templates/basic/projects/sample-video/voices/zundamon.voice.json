@@ -1,7 +1,0 @@
-{
-  "provider": "voicevox-compatible",
-  "speaker": "zundamon",
-  "style": "normal",
-  "language": "ja",
-  "notes": "Use a local VOICEVOX-compatible engine or adapter. Speaker IDs are provider-specific; keep the Timeline JSON provider-neutral."
-}

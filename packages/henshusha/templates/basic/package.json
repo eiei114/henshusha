@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "henshusha": "echo \"Open this workspace with Claude Code, Codex, or Pi and use the bundled skills.\"",
-    "render": "echo \"Render pipeline is coming next. Edit projects/sample-video/timelines/sample.timeline.json for now.\"",
-    "analyze": "echo \"Analyze pipeline is coming next. Place media in projects/sample-video/sources/raw/ or edit projects/sample-video/scripts/sample-script.md.\""
+    "validate": "npx henshusha validate projects/sample-video",
+    "render": "npx henshusha render projects/sample-video",
+    "new-project": "npx henshusha new-project"
   }
 }

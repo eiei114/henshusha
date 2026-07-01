@@ -3,17 +3,15 @@
   "projectsDir": "projects",
   "defaultProject": "sample-video",
   "defaultLanguage": "ja",
-  "defaultAsrProvider": "mock",
-  "narration": {
-    "defaultVoiceProvider": "voicevox-compatible",
-    "defaultSpeaker": "zundamon"
-  },
   "projectLayout": {
     "sourcesDir": "sources/raw",
+    "scriptsDir": "scripts",
     "transcriptsDir": "transcripts",
     "timelinesDir": "timelines",
-    "rendersDir": "renders",
-    "voicesDir": "voices",
-    "scriptsDir": "scripts"
+    "rendersDir": "renders"
+  },
+  "features": {
+    "asr": "deferred",
+    "tts": "deferred"
   }
 }

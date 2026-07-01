@@ -9,20 +9,24 @@ Henshusha creates an agent-native video editing workspace for Claude Code, Codex
 - Workspace root: opened by the agent runtime; owns shared config and installed skills.
 - Video Project: one video, series, or campaign folder under `projects/<project-name>/`.
 - Project-relative paths: Timeline JSON files live inside a Video Project and resolve relative paths from that folder.
+- Manual Timeline MVP: `scripts/edit-plan.md` is the human/agent planning surface; `timelines/main.timeline.json` is the render source of truth.
 
 ## Key Decisions
 
 - `henshusha` is the user-facing npm package for `npx henshusha` and `bunx henshusha`.
 - The starter creates a multi-project workspace, not a single-video folder.
-- Japanese script-first videos are a first-class early path via provider-neutral `voicevox-compatible` narration and a Zundamon preset.
-- Timeline JSON stays provider-neutral; adapter-specific VOICEVOX speaker IDs belong in provider config, not canonical timeline data.
+- The first implementation path is manual cut + title/caption overlay, rendered with FFmpeg.
+- Whisper/ASR, VOICEVOX/Zundamon, and TTS are intentionally deferred until manual timelines render reliably.
+- Timeline JSON uses `video`, `title`, and `caption` tracks for the MVP.
 
 ## TODO
 
-- Add `henshusha new-project <name>` to create more folders under `projects/`.
-- Add a VOICEVOX-compatible TTS adapter and timing output.
-- Add a minimal Remotion template for `yukkuri-zundamon-lite`.
+- Improve render support for source videos without audio tracks.
+- Add visual preview / Remotion template after the FFmpeg MVP stabilizes.
+- Add a VOICEVOX-compatible TTS adapter and timing output later.
+- Add Whisper/ASR as an optional provider later.
 
 ## Changelog
 
-- 2026-07-01: Recorded workspace/video-project split and Zundamon/Yukkuri-style narration direction.
+- 2026-07-01: Switched MVP from narration/ASR to manual cut + overlay rendering and recorded deferred provider scope.
+- 2026-07-01: Recorded workspace/video-project split and original Zundamon/Yukkuri-style future direction.

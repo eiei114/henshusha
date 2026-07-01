@@ -1,6 +1,6 @@
 # henshusha
 
-Create a Henshusha agent-native video editing workspace.
+Create and operate a Henshusha agent-native video editing workspace.
 
 ```bash
 npx henshusha my-studio
@@ -16,10 +16,9 @@ my-studio/
   projects/
     sample-video/
       sources/raw/
-      scripts/
-      voices/
+      scripts/edit-plan.md
       transcripts/
-      timelines/
+      timelines/main.timeline.json
       renders/
       jobs/
   .claude/skills/
@@ -27,4 +26,12 @@ my-studio/
   .pi/skills/
 ```
 
-The starter includes a Japanese sample project configured for a lightweight Zundamon / Yukkuri-style narration workflow through a provider-neutral `voicevox-compatible` voice preset.
+MVP commands:
+
+```bash
+npx henshusha validate projects/sample-video
+npx henshusha render projects/sample-video
+npx henshusha new-project next-video
+```
+
+The first renderer is a manual cut + overlay path: source video clips are concatenated, then title/caption text is overlaid with FFmpeg. Whisper/ASR and VOICEVOX/Zundamon narration are intentionally deferred.

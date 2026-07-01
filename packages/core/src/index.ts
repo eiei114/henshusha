@@ -1,15 +1,14 @@
 export interface HenshushaProjectLayout {
   sourcesDir: string;
+  scriptsDir: string;
   transcriptsDir: string;
   timelinesDir: string;
   rendersDir: string;
-  voicesDir?: string;
-  scriptsDir?: string;
 }
 
-export interface HenshushaNarrationConfig {
-  defaultVoiceProvider?: string;
-  defaultSpeaker?: string;
+export interface HenshushaFeatureFlags {
+  asr: "deferred" | "enabled";
+  tts: "deferred" | "enabled";
 }
 
 export interface HenshushaConfig {
@@ -17,28 +16,26 @@ export interface HenshushaConfig {
   projectsDir: string;
   defaultProject?: string;
   defaultLanguage?: string;
-  defaultAsrProvider?: string;
-  narration?: HenshushaNarrationConfig;
   projectLayout: HenshushaProjectLayout;
+  features: HenshushaFeatureFlags;
 }
 
 export const defaultProjectLayout: HenshushaProjectLayout = {
   sourcesDir: "sources/raw",
+  scriptsDir: "scripts",
   transcriptsDir: "transcripts",
   timelinesDir: "timelines",
-  rendersDir: "renders",
-  voicesDir: "voices",
-  scriptsDir: "scripts"
+  rendersDir: "renders"
 };
 
 export const defaultConfig: HenshushaConfig = {
   schemaVersion: 1,
   projectsDir: "projects",
+  defaultProject: "sample-video",
   defaultLanguage: "ja",
-  defaultAsrProvider: "mock",
-  narration: {
-    defaultVoiceProvider: "voicevox-compatible",
-    defaultSpeaker: "zundamon"
-  },
-  projectLayout: defaultProjectLayout
+  projectLayout: defaultProjectLayout,
+  features: {
+    asr: "deferred",
+    tts: "deferred"
+  }
 };

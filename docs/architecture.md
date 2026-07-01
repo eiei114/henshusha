@@ -8,22 +8,19 @@ Henshusha is a workspace starter. The CLI exists to support agent skills; the pr
 
 ```txt
 Source media
-  -> ffprobe / audio extract
-  -> ASR Provider
-  -> normalized transcript
+  -> manual edit plan
   -> Timeline JSON
   -> agent edits
-  -> Remotion render
-  -> FFmpeg export
+  -> FFmpeg cut + overlay render
 ```
 
 ## Source of truth
 
-`timelines/*.timeline.json` is the editing source of truth. Raw ASR output is an input, not the canonical project state.
+`timelines/*.timeline.json` is the editing source of truth. For the MVP, it is derived from a human edit plan rather than ASR output.
 
-## ASR provider abstraction
+## Deferred ASR provider abstraction
 
-OpenAI Whisper should not be a hard dependency. The MVP should support a provider interface so OpenAI, local whisper.cpp, faster-whisper, WhisperX, or cloud speech APIs can be added behind one normalized result shape.
+OpenAI Whisper is not part of the manual cut + overlay MVP. ASR remains a future provider interface so OpenAI, local whisper.cpp, faster-whisper, WhisperX, or cloud speech APIs can be added later behind one normalized result shape.
 
 ## Render variants
 
@@ -33,4 +30,4 @@ Aspect ratio and art direction are job-level choices, not project-wide constants
 
 A Henshusha workspace is the root opened by Claude Code, Codex, or Pi. Agent skills live at the workspace root. Individual videos or series live below `projects/<project-name>/`. Paths inside a Timeline JSON are interpreted relative to the containing video project unless they are absolute.
 
-The starter keeps Japanese narration provider-neutral: `voicevox-compatible` identifies the adapter family, while speaker IDs remain adapter-specific config outside the canonical Timeline JSON.
+The starter keeps narration and ASR deferred. Future VOICEVOX-compatible adapters should remain provider-neutral and keep engine-specific speaker IDs outside canonical Timeline JSON.

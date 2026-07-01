@@ -13,7 +13,7 @@ pnpm dev
 
 - Keep the repository directly buildable without Obsidian or Monofold.
 - Treat Timeline JSON as the source of truth for edits.
-- Keep ASR providers pluggable; do not make OpenAI the only transcription path.
+- Keep Whisper/ASR optional and deferred for the MVP; manual timelines must work without transcription.
 - Keep agent skills as first-class artifacts.
 - Keep generated video workspaces separate from contributor setup.
 

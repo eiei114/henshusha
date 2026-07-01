@@ -1,25 +1,20 @@
 ---
 name: henshusha-analyze-source
-description: Inspect a source video/audio file, extract audio or synthesize narration, run the configured ASR/TTS provider, and create a Henshusha transcript plus Timeline JSON skeleton.
+description: Inspect a target video project, read the human edit plan, confirm source media paths, and prepare manual cut/title/caption timeline inputs.
 ---
 
 # Henshusha Analyze Source
 
-Use when the user asks to analyze a source media file, transcribe audio, synthesize Japanese narration, or start a new video edit from raw media.
+Use when the user asks to start an edit from raw media, inspect a video project, or turn rough editing intent into a manual edit plan.
 
 ## Workflow
 
 1. Identify the target video project under `projects/<project-name>/` (default: `projects/sample-video`).
-2. Locate source media under that project's `sources/raw/` or narration script under `scripts/`.
-3. Inspect media streams with FFmpeg/ffprobe tooling when source media exists.
-4. Extract audio into a generated cache path, or synthesize narration audio through the configured voice provider.
-5. Run the configured ASR/alignment provider when timing data is needed.
-6. Normalize transcript segments and word timings.
-7. Create `transcripts/*.json` and `timelines/*.timeline.json` inside the target video project.
-8. Report low-confidence words, silence sections, voice synthesis warnings, and suggested edit hooks.
+2. Confirm the source media path under that project's `sources/raw/`.
+3. Read or create `scripts/edit-plan.md` before touching Timeline JSON.
+4. Capture desired cuts as source time ranges and output order.
+5. Capture title/caption overlays as text plus start/end timings.
+6. Do not run ASR, Whisper, TTS, or VOICEVOX in the MVP path.
+7. Hand off to `henshusha-edit-timeline` to encode the plan as `timelines/main.timeline.json`.
 
 Do not modify raw source files.
-
-## Japanese narration path
-
-For script-first Japanese videos, keep the script in `scripts/`, use provider-neutral voice presets in `voices/`, and generate TTS audio/timing through a VOICEVOX-compatible adapter such as Zundamon. Do not hardcode provider-specific speaker IDs in Timeline JSON.

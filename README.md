@@ -15,11 +15,11 @@ claude # or codex / pi
 
 Then ask an agent:
 
-> Work on `projects/sample-video`: draft a Japanese Zundamon narration, create captions and a timeline, then render a 9:16 short.
+> Work on `projects/sample-video`: turn the edit plan into manual cuts, add a midway title and caption overlays, then render a 9:16 short.
 
 ## Workspace model
 
-`henshusha` creates a workspace root, not a single-video folder. The workspace can contain multiple video projects under `projects/`. Each video project owns its sources, scripts, voice presets, transcripts, timelines, renders, and jobs.
+`henshusha` creates a workspace root, not a single-video folder. The workspace can contain multiple video projects under `projects/`. Each video project owns its sources, scripts, transcripts, timelines, renders, and jobs.
 
 ```txt
 my-studio/
@@ -28,7 +28,6 @@ my-studio/
     sample-video/
       sources/raw/
       scripts/
-      voices/
       transcripts/
       timelines/
       renders/
@@ -38,18 +37,16 @@ my-studio/
   .pi/skills/
 ```
 
-The first starter is biased toward Japanese script-first videos: Zundamon / Yukkuri-style narration via a provider-neutral `voicevox-compatible` voice preset, large Japanese captions, and 9:16 output.
+The first starter is biased toward manual timeline editing: human edit plan, explicit cuts, midway titles, large Japanese captions, and 9:16 output.
 
 ## MVP Pipeline
 
 ```txt
-source video/audio
-  -> audio extraction
-  -> ASR provider
-  -> normalized transcript
+source video
+  -> manual edit plan
   -> Timeline JSON
   -> agent edits captions/cuts/render variant
-  -> Remotion + FFmpeg render
+  -> FFmpeg cut + overlay render
   -> mp4 output
 ```
 

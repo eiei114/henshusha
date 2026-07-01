@@ -1,10 +1,3 @@
-# Timeline JSON
-
-Draft canonical editing format for the manual cut + overlay MVP.
-
-Timeline files usually live at `projects/<project-name>/timelines/*.timeline.json`. Relative paths are resolved from the video project folder, not the workspace root.
-
-```json
 {
   "version": "0.1",
   "source": {
@@ -40,6 +33,12 @@ Timeline files usually live at `projects/<project-name>/timelines/*.timeline.jso
             "end": 3,
             "text": "ここが見どころ",
             "preset": "bold-center"
+          },
+          {
+            "start": 8,
+            "end": 10,
+            "text": "続きは本編で",
+            "preset": "bold-center"
           }
         ]
       },
@@ -70,16 +69,3 @@ Timeline files usually live at `projects/<project-name>/timelines/*.timeline.jso
     }
   }
 }
-```
-
-## Track types
-
-- `video`: explicit manual cuts. `sourceStart` is the source video offset. `start` / `end` are output timeline positions.
-- `title`: centered title overlays.
-- `caption`: lower-third caption overlays.
-
-The first FFmpeg renderer concatenates video items in order. Gaps/overlaps are validation warnings and are not preserved yet.
-
-## Deferred features
-
-Narration, VOICEVOX/Zundamon, Whisper, ASR, and word-level timings are deferred. The MVP uses explicit manual cuts and overlay timings from `scripts/edit-plan.md`.

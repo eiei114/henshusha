@@ -93,8 +93,8 @@ jobs:
           test -f /tmp/henshu-local-smoke/demo/.claude/skills/henshusha-render/SKILL.md
           test -f /tmp/henshu-local-smoke/demo/.codex/skills/henshusha-edit-timeline/SKILL.md
           test -f /tmp/henshu-local-smoke/demo/.pi/skills/henshusha-analyze-source/SKILL.md
-          test -f /tmp/henshu-local-smoke/demo/projects/sample-video/timelines/sample.timeline.json
-          test -f /tmp/henshu-local-smoke/demo/projects/sample-video/voices/zundamon.voice.json
+          test -f /tmp/henshu-local-smoke/demo/projects/sample-video/timelines/main.timeline.json
+          test -f /tmp/henshu-local-smoke/demo/projects/sample-video/scripts/edit-plan.md
 
       - name: Publish to npm with trusted publishing
         if: steps.exists.outputs.exists == 'false'
@@ -123,7 +123,7 @@ jobs:
           mkdir -p /tmp/henshu-npm-smoke
           (cd /tmp/henshu-npm-smoke && npx "henshusha@${{ steps.pkg.outputs.version }}" demo)
           test -f /tmp/henshu-npm-smoke/demo/.claude/skills/henshusha-render/SKILL.md
-          test -f /tmp/henshu-npm-smoke/demo/projects/sample-video/voices/zundamon.voice.json
+          test -f /tmp/henshu-npm-smoke/demo/projects/sample-video/scripts/edit-plan.md
 
       - name: Verify bunx path
         if: steps.exists.outputs.exists == 'false'
@@ -133,7 +133,7 @@ jobs:
           mkdir -p /tmp/henshu-bun-smoke
           (cd /tmp/henshu-bun-smoke && bunx "henshusha@${{ steps.pkg.outputs.version }}" demo)
           test -f /tmp/henshu-bun-smoke/demo/.codex/skills/henshusha-edit-timeline/SKILL.md
-          test -f /tmp/henshu-bun-smoke/demo/projects/sample-video/timelines/sample.timeline.json
+          test -f /tmp/henshu-bun-smoke/demo/projects/sample-video/timelines/main.timeline.json
 
       - name: Create version tag
         if: steps.exists.outputs.exists == 'true' || success()
