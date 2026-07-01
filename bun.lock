@@ -1,0 +1,73 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "henshusha",
+      "devDependencies": {
+        "@types/node": "^22.10.0",
+        "typescript": "^5.5.4",
+      },
+    },
+    "packages/agent-kit": {
+      "name": "@henshusha/agent-kit",
+    },
+    "packages/asr": {
+      "name": "@henshusha/asr",
+    },
+    "packages/cli": {
+      "name": "@henshusha/cli",
+    },
+    "packages/components": {
+      "name": "@henshusha/components",
+    },
+    "packages/core": {
+      "name": "@henshusha/core",
+    },
+    "packages/create-henshusha": {
+      "name": "create-henshusha",
+      "bin": {
+        "create-henshusha": "./dist/index.js",
+      },
+    },
+    "packages/ffmpeg": {
+      "name": "@henshusha/ffmpeg",
+    },
+    "packages/remotion": {
+      "name": "@henshusha/remotion",
+    },
+    "packages/templates": {
+      "name": "@henshusha/templates",
+    },
+    "packages/timeline": {
+      "name": "@henshusha/timeline",
+    },
+  },
+  "packages": {
+    "@henshusha/agent-kit": ["@henshusha/agent-kit@workspace:packages/agent-kit"],
+
+    "@henshusha/asr": ["@henshusha/asr@workspace:packages/asr"],
+
+    "@henshusha/cli": ["@henshusha/cli@workspace:packages/cli"],
+
+    "@henshusha/components": ["@henshusha/components@workspace:packages/components"],
+
+    "@henshusha/core": ["@henshusha/core@workspace:packages/core"],
+
+    "@henshusha/ffmpeg": ["@henshusha/ffmpeg@workspace:packages/ffmpeg"],
+
+    "@henshusha/remotion": ["@henshusha/remotion@workspace:packages/remotion"],
+
+    "@henshusha/templates": ["@henshusha/templates@workspace:packages/templates"],
+
+    "@henshusha/timeline": ["@henshusha/timeline@workspace:packages/timeline"],
+
+    "@types/node": ["@types/node@22.20.0", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g=="],
+
+    "create-henshusha": ["create-henshusha@workspace:packages/create-henshusha"],
+
+    "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+
+    "undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
+  }
+}

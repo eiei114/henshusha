@@ -24,3 +24,14 @@ pnpm typecheck
 ```
 
 Add or update docs when changing architecture, package boundaries, or workflow names.
+
+## Bun
+
+Bun users can contribute with:
+
+```bash
+bun install
+bun run dev
+```
+
+Do not add package scripts that only work under pnpm unless there is a Bun-compatible path. Do not introduce Bun-only runtime APIs in published packages unless there is a Node-compatible fallback.

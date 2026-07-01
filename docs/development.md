@@ -34,3 +34,15 @@ cd .fixtures/basic-workspace
 ```
 
 Until `create-henshusha` exists, the fixture is a stable sandbox for checking the expected workspace layout.
+
+## Bun support
+
+Bun is a first-class contributor path:
+
+```bash
+bun install
+bun run dev
+bun run dev:fixture
+```
+
+The repository keeps scripts package-manager neutral where practical. `pnpm` remains supported for lockfile and npm-publishing workflows, but new contributor scripts should also work under `bun run`.

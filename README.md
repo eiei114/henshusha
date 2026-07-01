@@ -64,3 +64,15 @@ See [`docs/development.md`](docs/development.md) and [`docs/contributing.md`](do
 ## Status
 
 Planning / bootstrap. First milestone: render one captioned MP4 from one source file through the MVP Pipeline.
+
+## Bun support
+
+Bun is a first-class contributor path.
+
+```bash
+bun install
+bun run dev
+bun run dev:fixture
+```
+
+`pnpm` remains supported because many npm publishing and monorepo workflows still expect it, but Henshusha scripts should stay compatible with Bun.

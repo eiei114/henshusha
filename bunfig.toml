@@ -1,0 +1,3 @@
+[install]
+# Commit Bun's text lockfile for first-class Bun installs.
+saveTextLockfile = true

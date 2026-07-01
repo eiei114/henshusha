@@ -31,3 +31,10 @@ Henshusha is an agent-native video editing workspace starter for Claude Code, Co
 - Do not make Obsidian, Monofold, or `create-henshusha --dev` mandatory for contributors.
 - `create-henshusha` is the user-facing workspace starter; repo-local `pnpm dev:*` scripts are the contributor path.
 - Use `pnpm dev:fixture` for dogfooding generated workspace shape before the real scaffolder exists.
+
+## Bun-compatible contributor scripts
+
+- Bun is a first-class contributor path: `bun install`, `bun run dev`, `bun run dev:fixture`.
+- Keep root scripts package-manager neutral when practical.
+- Keep pnpm support for npm publishing and ecosystem compatibility.
+- Do not introduce Bun-only runtime APIs in published packages without a Node-compatible fallback.
