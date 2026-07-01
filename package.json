@@ -1,0 +1,37 @@
+{
+  "name": "henshusha",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Agent-native video editing workspace for Claude Code, Codex, and Pi.",
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "check": "pnpm -r --if-present check",
+    "lint": "pnpm -r --if-present lint",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck"
+  },
+  "keywords": [
+    "video",
+    "remotion",
+    "ffmpeg",
+    "whisper",
+    "agents",
+    "claude-code",
+    "codex",
+    "pi"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eiei114/henshusha.git"
+  },
+  "bugs": {
+    "url": "https://github.com/eiei114/henshusha/issues"
+  },
+  "homepage": "https://github.com/eiei114/henshusha#readme",
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}
