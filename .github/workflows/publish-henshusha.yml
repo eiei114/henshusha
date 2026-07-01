@@ -121,7 +121,7 @@ jobs:
         run: |
           rm -rf /tmp/henshu-npm-smoke
           mkdir -p /tmp/henshu-npm-smoke
-          (cd /tmp/henshu-npm-smoke && npx "henshusha@${{ steps.pkg.outputs.version }}" demo)
+          (cd /tmp/henshu-npm-smoke && npx --yes "henshusha@${{ steps.pkg.outputs.version }}" demo)
           test -f /tmp/henshu-npm-smoke/demo/.claude/skills/henshusha-render/SKILL.md
           test -f /tmp/henshu-npm-smoke/demo/projects/sample-video/scripts/edit-plan.md
 
