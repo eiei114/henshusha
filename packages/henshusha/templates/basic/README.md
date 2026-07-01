@@ -25,3 +25,16 @@ MVP path:
 4. Run `npx henshusha validate projects/sample-video`.
 5. Run `npx henshusha render projects/sample-video --dry-run` to inspect `projects/sample-video/jobs/render-plan.json`.
 6. Run `npx henshusha render projects/sample-video` when FFmpeg is installed.
+
+## Remotion preview/render
+
+The starter includes a Remotion composition under `projects/sample-video/remotion/`.
+
+```bash
+npm install
+npm run remotion:props
+npm run remotion:preview
+npm run remotion:render
+```
+
+`remotion:props` converts `timelines/main.timeline.json` into `remotion/timeline-props.json`. The Remotion template reads that file and uses the video project folder as the static-file public directory.

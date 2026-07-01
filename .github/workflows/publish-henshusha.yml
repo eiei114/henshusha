@@ -95,9 +95,14 @@ jobs:
           test -f /tmp/henshu-local-smoke/demo/.pi/skills/henshusha-analyze-source/SKILL.md
           test -f /tmp/henshu-local-smoke/demo/projects/sample-video/timelines/main.timeline.json
           test -f /tmp/henshu-local-smoke/demo/projects/sample-video/scripts/edit-plan.md
+          test -f /tmp/henshu-local-smoke/demo/projects/sample-video/remotion/index.tsx
+          test -f /tmp/henshu-local-smoke/demo/projects/sample-video/remotion/Root.tsx
+          test -f /tmp/henshu-local-smoke/demo/remotion.config.ts
           (cd /tmp/henshu-local-smoke/demo && node "$GITHUB_WORKSPACE/${PACKAGE_DIR}/dist/index.js" validate projects/sample-video)
           (cd /tmp/henshu-local-smoke/demo && node "$GITHUB_WORKSPACE/${PACKAGE_DIR}/dist/index.js" render projects/sample-video --dry-run)
+          (cd /tmp/henshu-local-smoke/demo && node "$GITHUB_WORKSPACE/${PACKAGE_DIR}/dist/index.js" remotion-props projects/sample-video)
           test -f /tmp/henshu-local-smoke/demo/projects/sample-video/jobs/render-plan.json
+          test -f /tmp/henshu-local-smoke/demo/projects/sample-video/remotion/timeline-props.json
 
       - name: Publish to npm with trusted publishing
         if: steps.exists.outputs.exists == 'false'

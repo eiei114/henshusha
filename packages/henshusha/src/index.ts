@@ -134,7 +134,7 @@ function hasFlag(argv: string[], name: string): boolean {
   return argv.includes(name);
 }
 
-const valueOptions = new Set(["--timeline", "--output", "--plan-output"]);
+const valueOptions = new Set(["--timeline", "--output", "--plan-output", "--fps"]);
 
 function firstPositional(argv: string[], fallback: string): string {
   for (let index = 0; index < argv.length; index += 1) {
@@ -174,13 +174,19 @@ function ffmpegText(value: string): string {
     .replaceAll("\n", "\\n");
 }
 
+function defaultFontFile(): string | undefined {
+  if (process.platform !== "win32") return undefined;
+  return "C\\:/Windows/Fonts/meiryo.ttc";
+}
+
 function drawText(item: TextItem, type: TrackType): string {
   const preset = item.preset ?? (type === "title" ? "bold-center" : "bottom-caption");
   const fontSize = preset.includes("caption") || type === "caption" ? 54 : 76;
   const y = preset.includes("bottom") || type === "caption" ? "h-(text_h*3)" : "(h-text_h)/2";
   const boxColor = type === "title" ? "black@0.55" : "black@0.45";
-  return [
-    "drawtext=",
+  const fontFile = defaultFontFile();
+  const options = [
+    ...(fontFile ? [`fontfile='${fontFile}'`] : []),
     `text='${ffmpegText(item.text)}'`,
     `fontsize=${fontSize}`,
     "fontcolor=white",
@@ -190,7 +196,8 @@ function drawText(item: TextItem, type: TrackType): string {
     "x=(w-text_w)/2",
     `y=${y}`,
     `enable='between(t,${item.start},${item.end})'`
-  ].join(":");
+  ];
+  return `drawtext=${options.join(":")}`;
 }
 
 function videoTrack(timeline: Timeline): Track {
@@ -288,6 +295,19 @@ interface RenderPlan {
   };
 }
 
+interface RemotionTimelineProps {
+  schemaVersion: 1;
+  kind: "henshusha.remotion-props";
+  createdAt: string;
+  projectRoot: string;
+  timelinePath: string;
+  fps: number;
+  width: number;
+  height: number;
+  durationInFrames: number;
+  timeline: Timeline;
+}
+
 function shellQuote(value: string): string {
   if (/^[A-Za-z0-9_./:=+@%-]+$/.test(value)) return value;
   return JSON.stringify(value);
@@ -342,6 +362,36 @@ async function writeRenderPlan(projectRoot: string, timelinePath: string, timeli
   return planPath;
 }
 
+function timelineDurationSeconds(timeline: Timeline): number {
+  if (isNumber(timeline.timeline?.duration) && timeline.timeline.duration > 0) return timeline.timeline.duration;
+  const maxEnd = timeline.timeline?.tracks.flatMap((track) => track.items).reduce((max, item) => Math.max(max, item.end), 0) ?? 0;
+  if (maxEnd <= 0) throw new Error("timeline duration could not be inferred");
+  return maxEnd;
+}
+
+function buildRemotionProps(projectRoot: string, timelinePath: string, timeline: Timeline, fps: number): RemotionTimelineProps {
+  const { width, height } = parseResolution(timeline.render.variant.resolution);
+  return {
+    schemaVersion: 1,
+    kind: "henshusha.remotion-props",
+    createdAt: new Date().toISOString(),
+    projectRoot,
+    timelinePath,
+    fps,
+    width,
+    height,
+    durationInFrames: Math.ceil(timelineDurationSeconds(timeline) * fps),
+    timeline
+  };
+}
+
+async function writeRemotionProps(projectRoot: string, timelinePath: string, timeline: Timeline, output?: string, fps = 30): Promise<string> {
+  const propsPath = projectPath(projectRoot, output ?? "remotion/timeline-props.json");
+  await mkdir(path.dirname(propsPath), { recursive: true });
+  await writeFile(propsPath, `${JSON.stringify(buildRemotionProps(projectRoot, timelinePath, timeline, fps), null, 2)}\n`, "utf8");
+  return propsPath;
+}
+
 async function renderProject(argv: string[]): Promise<void> {
   const projectRoot = path.resolve(process.cwd(), firstPositional(argv, "projects/sample-video"));
   const timelinePath = await findTimelinePath(projectRoot, parseOption(argv, "--timeline"));
@@ -358,6 +408,17 @@ async function renderProject(argv: string[]): Promise<void> {
   console.log(`Rendering ${path.relative(process.cwd(), timelinePath)} -> ${path.relative(process.cwd(), output)}`);
   await runFfmpeg(buildFfmpegArgs(projectRoot, timeline, output));
   console.log(`Rendered: ${output}`);
+}
+
+async function remotionPropsProject(argv: string[]): Promise<void> {
+  const projectRoot = path.resolve(process.cwd(), firstPositional(argv, "projects/sample-video"));
+  const timelinePath = await findTimelinePath(projectRoot, parseOption(argv, "--timeline"));
+  const timeline = await readTimeline(timelinePath);
+  const fpsValue = parseOption(argv, "--fps");
+  const fps = fpsValue ? Number(fpsValue) : 30;
+  if (!Number.isFinite(fps) || fps <= 0) throw new Error("--fps must be a positive number");
+  const propsPath = await writeRemotionProps(projectRoot, timelinePath, timeline, parseOption(argv, "--output"), fps);
+  console.log(`Wrote Remotion props: ${path.relative(process.cwd(), propsPath)}`);
 }
 
 async function newProject(argv: string[]): Promise<void> {
@@ -397,10 +458,11 @@ export async function runCli(argv = process.argv.slice(2)): Promise<void> {
   const [command, ...rest] = argv;
   if (command === "validate") return validateProject(rest);
   if (command === "render") return renderProject(rest);
+  if (command === "remotion-props") return remotionPropsProject(rest);
   if (command === "new-project") return newProject(rest);
   if (command === "doctor") return doctor();
   if (command === "help" || command === "--help" || command === "-h") {
-    console.log("Usage: henshusha [workspace-name] | validate [project-dir] | render [project-dir] [--dry-run] [--plan-output <path>] | new-project <name> | doctor");
+    console.log("Usage: henshusha [workspace-name] | validate [project-dir] | render [project-dir] [--dry-run] [--plan-output <path>] | remotion-props [project-dir] [--output <path>] [--fps <number>] | new-project <name> | doctor");
     return;
   }
   return createHenshushaWorkspace(argv);

@@ -32,10 +32,11 @@ pnpm dev:fixture
 cd .fixtures/basic-workspace
 node ../../packages/henshusha/dist/index.js validate projects/sample-video
 node ../../packages/henshusha/dist/index.js render projects/sample-video --dry-run
+node ../../packages/henshusha/dist/index.js remotion-props projects/sample-video
 # open with claude / codex / pi when local skill copying exists
 ```
 
-The fixture is a stable sandbox for checking the expected workspace layout before publishing a starter change. The dry-run command writes `projects/sample-video/jobs/render-plan.json` without requiring FFmpeg.
+The fixture is a stable sandbox for checking the expected workspace layout before publishing a starter change. The dry-run command writes `projects/sample-video/jobs/render-plan.json` without requiring FFmpeg. The Remotion props command writes `projects/sample-video/remotion/timeline-props.json`.
 
 ## Bun support
 

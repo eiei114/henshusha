@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "kind": "henshusha.remotion-props",
+  "createdAt": "1970-01-01T00:00:00.000Z",
+  "projectRoot": "projects/sample-video",
+  "timelinePath": "projects/sample-video/timelines/main.timeline.json",
+  "fps": 30,
+  "width": 1080,
+  "height": 1920,
+  "durationInFrames": 300,
+  "timeline": {
+    "version": "0.1",
+    "source": {
+      "path": "sources/raw/input.mp4"
+    },
+    "timeline": {
+      "duration": 10,
+      "tracks": []
+    },
+    "render": {
+      "output": "renders/output.mp4",
+      "variant": {
+        "aspect": "9:16",
+        "resolution": "1080x1920",
+        "safeArea": "short-video"
+      }
+    }
+  }
+}
