@@ -131,20 +131,26 @@ jobs:
         run: |
           rm -rf /tmp/henshu-npm-smoke
           mkdir -p /tmp/henshu-npm-smoke
-          for attempt in {1..6}; do
-            if (cd /tmp/henshu-npm-smoke && npx --yes "henshusha@${{ steps.pkg.outputs.version }}" demo); then
+          for attempt in {1..12}; do
+            rm -rf /tmp/henshu-npm-smoke/demo
+            if (
+              cd /tmp/henshu-npm-smoke &&
+              npx --yes "henshusha@${{ steps.pkg.outputs.version }}" demo &&
+              test -f /tmp/henshu-npm-smoke/demo/.claude/skills/henshusha-render/SKILL.md &&
+              test -f /tmp/henshu-npm-smoke/demo/.claude/skills/henshusha-digest-story/SKILL.md &&
+              test -f /tmp/henshu-npm-smoke/demo/projects/sample-video/scripts/edit-plan.md &&
+              test -f /tmp/henshu-npm-smoke/demo/projects/sample-video/scripts/digest-story.md
+            ); then
               break
             fi
-            if [ "$attempt" = "6" ]; then
+            if [ "$attempt" = "12" ]; then
+              find /tmp/henshu-npm-smoke -maxdepth 6 -type f | sort || true
               exit 1
             fi
-            echo "npx smoke failed; retrying ($attempt/6)..."
-            rm -rf /tmp/henshu-npm-smoke/demo
+            echo "npx smoke failed or scaffold incomplete; retrying ($attempt/12)..."
             npm cache clean --force || true
             sleep 10
           done
-          test -f /tmp/henshu-npm-smoke/demo/.claude/skills/henshusha-render/SKILL.md
-          test -f /tmp/henshu-npm-smoke/demo/projects/sample-video/scripts/edit-plan.md
 
       - name: Verify bunx path
         if: steps.exists.outputs.exists == 'false'
@@ -152,20 +158,26 @@ jobs:
         run: |
           rm -rf /tmp/henshu-bun-smoke
           mkdir -p /tmp/henshu-bun-smoke
-          for attempt in {1..6}; do
-            if (cd /tmp/henshu-bun-smoke && bunx "henshusha@${{ steps.pkg.outputs.version }}" demo); then
+          for attempt in {1..12}; do
+            rm -rf /tmp/henshu-bun-smoke/demo
+            if (
+              cd /tmp/henshu-bun-smoke &&
+              bunx "henshusha@${{ steps.pkg.outputs.version }}" demo &&
+              test -f /tmp/henshu-bun-smoke/demo/.codex/skills/henshusha-edit-timeline/SKILL.md &&
+              test -f /tmp/henshu-bun-smoke/demo/.pi/skills/henshusha-digest-story/SKILL.md &&
+              test -f /tmp/henshu-bun-smoke/demo/projects/sample-video/timelines/main.timeline.json &&
+              test -f /tmp/henshu-bun-smoke/demo/projects/sample-video/scripts/digest-story.md
+            ); then
               break
             fi
-            if [ "$attempt" = "6" ]; then
+            if [ "$attempt" = "12" ]; then
+              find /tmp/henshu-bun-smoke -maxdepth 6 -type f | sort || true
               exit 1
             fi
-            echo "bunx smoke failed; retrying ($attempt/6)..."
-            rm -rf /tmp/henshu-bun-smoke/demo
+            echo "bunx smoke failed or scaffold incomplete; retrying ($attempt/12)..."
             bun pm cache rm || true
             sleep 10
           done
-          test -f /tmp/henshu-bun-smoke/demo/.codex/skills/henshusha-edit-timeline/SKILL.md
-          test -f /tmp/henshu-bun-smoke/demo/projects/sample-video/timelines/main.timeline.json
 
       - name: Create version tag
         if: steps.exists.outputs.exists == 'true' || success()
