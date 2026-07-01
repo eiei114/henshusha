@@ -100,6 +100,21 @@ jobs:
         if: steps.exists.outputs.exists == 'false'
         run: npm publish "./${PACKAGE_DIR}" --access public
 
+      - name: Wait for npm registry propagation
+        if: steps.exists.outputs.exists == 'false'
+        shell: bash
+        run: |
+          for attempt in {1..18}; do
+            if npm view "${PACKAGE_NAME}@${{ steps.pkg.outputs.version }}" version >/dev/null 2>&1; then
+              echo "${PACKAGE_NAME}@${{ steps.pkg.outputs.version }} is visible on npm."
+              exit 0
+            fi
+            echo "Waiting for npm registry propagation ($attempt/18)..."
+            sleep 10
+          done
+          echo "${PACKAGE_NAME}@${{ steps.pkg.outputs.version }} did not become visible on npm in time."
+          exit 1
+
       - name: Verify npx path
         if: steps.exists.outputs.exists == 'false'
         shell: bash
@@ -121,7 +136,7 @@ jobs:
           test -f /tmp/henshu-bun-smoke/demo/projects/sample-video/timelines/sample.timeline.json
 
       - name: Create version tag
-        if: steps.exists.outputs.exists == 'false'
+        if: steps.exists.outputs.exists == 'true' || success()
         shell: bash
         run: |
           TAG="v${{ steps.pkg.outputs.version }}"
