@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -32,8 +32,13 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org
+
+      - name: Ensure npm supports trusted publishing
+        run: |
+          npm install -g npm@latest
+          npm --version
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -88,13 +93,12 @@ jobs:
           test -f /tmp/henshu-local-smoke/demo/.claude/skills/henshusha-render/SKILL.md
           test -f /tmp/henshu-local-smoke/demo/.codex/skills/henshusha-edit-timeline/SKILL.md
           test -f /tmp/henshu-local-smoke/demo/.pi/skills/henshusha-analyze-source/SKILL.md
-          test -f /tmp/henshu-local-smoke/demo/timelines/sample.timeline.json
+          test -f /tmp/henshu-local-smoke/demo/projects/sample-video/timelines/sample.timeline.json
+          test -f /tmp/henshu-local-smoke/demo/projects/sample-video/voices/zundamon.voice.json
 
-      - name: Publish to npm
+      - name: Publish to npm with trusted publishing
         if: steps.exists.outputs.exists == 'false'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish "./${PACKAGE_DIR}" --access public --provenance
+        run: npm publish "./${PACKAGE_DIR}" --access public
 
       - name: Verify npx path
         if: steps.exists.outputs.exists == 'false'
@@ -104,6 +108,7 @@ jobs:
           mkdir -p /tmp/henshu-npm-smoke
           (cd /tmp/henshu-npm-smoke && npx "henshusha@${{ steps.pkg.outputs.version }}" demo)
           test -f /tmp/henshu-npm-smoke/demo/.claude/skills/henshusha-render/SKILL.md
+          test -f /tmp/henshu-npm-smoke/demo/projects/sample-video/voices/zundamon.voice.json
 
       - name: Verify bunx path
         if: steps.exists.outputs.exists == 'false'
@@ -113,3 +118,22 @@ jobs:
           mkdir -p /tmp/henshu-bun-smoke
           (cd /tmp/henshu-bun-smoke && bunx "henshusha@${{ steps.pkg.outputs.version }}" demo)
           test -f /tmp/henshu-bun-smoke/demo/.codex/skills/henshusha-edit-timeline/SKILL.md
+          test -f /tmp/henshu-bun-smoke/demo/projects/sample-video/timelines/sample.timeline.json
+
+      - name: Create version tag
+        if: steps.exists.outputs.exists == 'false'
+        shell: bash
+        run: |
+          TAG="v${{ steps.pkg.outputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists locally; skipping."
+            exit 0
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists on origin; skipping."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "henshusha ${{ steps.pkg.outputs.version }}"
+          git push origin "$TAG"

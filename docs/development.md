@@ -33,7 +33,7 @@ cd .fixtures/basic-workspace
 # open with claude / codex / pi when local skill copying exists
 ```
 
-Until `henshusha` is published and fully wired, the fixture is a stable sandbox for checking the expected workspace layout.
+The fixture is a stable sandbox for checking the expected workspace layout before publishing a starter change.
 
 ## Bun support
 
@@ -51,14 +51,21 @@ The repository keeps scripts package-manager neutral where practical. `pnpm` rem
 
 `henshusha` publishes from GitHub Actions when a push to `main` contains a package version that does not already exist on npm.
 
-Required GitHub secret:
+Publishing uses npm Trusted Publishing (GitHub Actions OIDC), not a long-lived `NPM_TOKEN` secret. Configure npm package settings for `henshusha` with:
 
-- `NPM_TOKEN` — npm automation token with publish permission for `henshusha`.
+- Provider: GitHub Actions
+- Repository: `eiei114/henshusha`
+- Workflow filename: `publish-henshusha.yml`
+- Allowed action: `npm publish`
 
 Release flow:
 
 1. Update `packages/henshusha/package.json` version.
 2. Merge to `main`.
-3. CI builds with pnpm and Bun, runs scaffold smoke tests, publishes to npm, then verifies both `npx henshusha@<version>` and `bunx henshusha@<version>`.
+3. CI builds with pnpm and Bun, runs scaffold smoke tests, publishes to npm via trusted publishing, verifies both `npx henshusha@<version>` and `bunx henshusha@<version>`, then pushes tag `v<version>`.
 
-If the version already exists, CI skips publishing instead of failing.
+If the version already exists, CI skips publishing and tag creation instead of failing.
+
+## Starter workspace shape
+
+The starter creates a workspace root with `projects/sample-video/`. Keep future CLI commands aligned with this model: workspace-level commands manage shared config and skills; project-level commands operate on `projects/<project-name>/`.
