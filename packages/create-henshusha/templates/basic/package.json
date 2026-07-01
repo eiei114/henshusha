@@ -1,0 +1,13 @@
+{
+  "name": "henshusha-video-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "henshusha": "henshusha",
+    "render": "henshusha render",
+    "analyze": "henshusha analyze-source"
+  },
+  "devDependencies": {
+    "@henshusha/cli": "workspace:*"
+  }
+}
