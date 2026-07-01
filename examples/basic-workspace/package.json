@@ -4,7 +4,23 @@
   "type": "module",
   "scripts": {
     "validate": "npx henshusha validate projects/sample-video",
+    "render:dry-run": "npx henshusha render projects/sample-video --dry-run",
     "render": "npx henshusha render projects/sample-video",
+    "remotion:props": "npx henshusha remotion-props projects/sample-video",
+    "remotion:preview": "npm run remotion:props && remotion preview projects/sample-video/remotion/index.tsx",
+    "remotion:render": "npm run remotion:props && remotion render projects/sample-video/remotion/index.tsx HenshushaTimeline projects/sample-video/renders/remotion-output.mp4",
     "new-project": "npx henshusha new-project"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.484",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "remotion": "^4.0.484"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.5.4"
   }
 }

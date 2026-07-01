@@ -59,14 +59,18 @@
             {
               "start": 0,
               "end": 2,
-              "text": "素材からストーリーへ",
-              "preset": "bold-center"
+              "text": "素材から\nストーリーへ",
+              "preset": "headline-pop",
+              "label": "HOOK",
+              "accent": "#ffcf33"
             },
             {
               "start": 7,
               "end": 9,
               "text": "FFmpegでMVPを書き出し",
-              "preset": "bold-center"
+              "preset": "lower-third",
+              "speaker": "Henshusha",
+              "accent": "#ff4f9a"
             }
           ]
         },
@@ -78,7 +82,8 @@
               "start": 2,
               "end": 4,
               "text": "ビートを手で決める",
-              "preset": "bottom-caption"
+              "preset": "karaoke-caption",
+              "accent": "#45d7ff"
             },
             {
               "start": 4,
@@ -90,7 +95,8 @@
               "start": 9,
               "end": 10,
               "text": "Remotionで次の表現へ",
-              "preset": "bottom-caption"
+              "preset": "quote-card",
+              "accent": "#ffcf33"
             }
           ]
         }

@@ -15,6 +15,9 @@ export interface TimelineTextItem {
   end: number;
   text: string;
   preset?: string;
+  accent?: string;
+  label?: string;
+  speaker?: string;
 }
 
 export interface TimelineTrack {
@@ -93,7 +96,12 @@ export function validateTimeline(value: unknown): TimelineValidationResult {
         if (track.type === "video") {
           if (item.source !== undefined && !isString(item.source)) errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}].source must be a string`);
           if (item.sourceStart !== undefined && !isNumber(item.sourceStart)) errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}].sourceStart must be a number`);
-        } else if (!isString(item.text)) errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}].text is required`);
+        } else {
+          if (!isString(item.text)) errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}].text is required`);
+          for (const key of ["preset", "accent", "label", "speaker"] as const) {
+            if (item[key] !== undefined && !isString(item[key])) errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}].${key} must be a string`);
+          }
+        }
       }
     }
   }

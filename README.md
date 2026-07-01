@@ -13,6 +13,9 @@ cd my-studio
 claude # or codex / pi
 ```
 
+The starter installs Remotion dependencies and initializes a local Git repository by default. Use `--no-install` or `--no-git` when you need a lighter scaffold.
+Run `npx henshusha doctor --updates` inside a workspace to check whether a newer package is available.
+
 Then ask an agent:
 
 > Work on `projects/sample-video`: turn the edit plan into manual cuts, add a midway title and caption overlays, then render a 9:16 short.
@@ -23,6 +26,9 @@ Then ask an agent:
 
 ```txt
 my-studio/
+  .git/
+  .gitattributes
+  .gitignore
   henshusha.config.json
   projects/
     sample-video/
@@ -37,7 +43,7 @@ my-studio/
   .pi/skills/
 ```
 
-The first starter is biased toward manual timeline editing: human edit plan, explicit cuts, midway titles, large Japanese captions, and 9:16 output.
+The first starter is biased toward manual timeline editing: human edit plan, explicit cuts, midway titles, large Japanese captions, 9:16 output, and Remotion text template components for richer captions/titles.
 
 ## MVP Pipeline
 
@@ -47,6 +53,7 @@ source video
   -> Timeline JSON
   -> agent edits captions/cuts/render variant
   -> FFmpeg cut + overlay render
+  -> optional Remotion preview/render with text templates
   -> mp4 output
 ```
 

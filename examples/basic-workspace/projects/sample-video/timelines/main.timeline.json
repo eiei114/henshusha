@@ -14,12 +14,30 @@
             "source": "sources/raw/input.mp4",
             "sourceStart": 0,
             "start": 0,
+            "end": 2
+          },
+          {
+            "source": "sources/raw/input.mp4",
+            "sourceStart": 2,
+            "start": 2,
             "end": 4
           },
           {
             "source": "sources/raw/input.mp4",
-            "sourceStart": 6,
+            "sourceStart": 4,
             "start": 4,
+            "end": 7
+          },
+          {
+            "source": "sources/raw/input.mp4",
+            "sourceStart": 7,
+            "start": 7,
+            "end": 9
+          },
+          {
+            "source": "sources/raw/input.mp4",
+            "sourceStart": 9,
+            "start": 9,
             "end": 10
           }
         ]
@@ -29,16 +47,20 @@
         "type": "title",
         "items": [
           {
-            "start": 1,
-            "end": 3,
-            "text": "ここが見どころ",
-            "preset": "bold-center"
+            "start": 0,
+            "end": 2,
+            "text": "素材から\nストーリーへ",
+            "preset": "headline-pop",
+            "label": "HOOK",
+            "accent": "#ffcf33"
           },
           {
-            "start": 8,
-            "end": 10,
-            "text": "続きは本編で",
-            "preset": "bold-center"
+            "start": 7,
+            "end": 9,
+            "text": "FFmpegでMVPを書き出し",
+            "preset": "lower-third",
+            "speaker": "Henshusha",
+            "accent": "#ff4f9a"
           }
         ]
       },
@@ -47,10 +69,24 @@
         "type": "caption",
         "items": [
           {
-            "start": 5,
-            "end": 9,
-            "text": "手動タイムラインでカットと見出しを入れます",
+            "start": 2,
+            "end": 4,
+            "text": "ビートを手で決める",
+            "preset": "karaoke-caption",
+            "accent": "#45d7ff"
+          },
+          {
+            "start": 4,
+            "end": 7,
+            "text": "Timeline JSON が編集の正本",
             "preset": "bottom-caption"
+          },
+          {
+            "start": 9,
+            "end": 10,
+            "text": "Remotionで次の表現へ",
+            "preset": "quote-card",
+            "accent": "#ffcf33"
           }
         ]
       }
@@ -64,7 +100,7 @@
       "safeArea": "short-video"
     },
     "artDirection": {
-      "preset": "manual-cut-overlay",
+      "preset": "digest-story",
       "captionStyle": "large-ja-subtitles"
     }
   }

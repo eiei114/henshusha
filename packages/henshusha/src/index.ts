@@ -12,7 +12,7 @@ type TrackType = "video" | "title" | "caption";
 type Aspect = "16:9" | "9:16" | "1:1";
 
 interface VideoItem { source?: string; start: number; end: number; sourceStart?: number }
-interface TextItem { start: number; end: number; text: string; preset?: string }
+interface TextItem { start: number; end: number; text: string; preset?: string; accent?: string; label?: string; speaker?: string }
 interface Track { id: string; type: TrackType; items: Array<VideoItem | TextItem> }
 interface Timeline {
   version: "0.1";
@@ -56,6 +56,70 @@ async function updateWorkspaceName(projectRoot: string, workspaceName: string): 
   await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8");
 }
 
+type PackageManager = "npm" | "pnpm" | "bun" | "yarn";
+
+function detectPackageManager(): PackageManager {
+  const userAgent = process.env.npm_config_user_agent ?? "";
+  const execPath = process.env.npm_execpath ?? "";
+  if (userAgent.startsWith("bun/") || /bun/i.test(execPath)) return "bun";
+  if (userAgent.startsWith("pnpm/") || /pnpm/i.test(execPath)) return "pnpm";
+  if (userAgent.startsWith("yarn/") || /yarn/i.test(execPath)) return "yarn";
+  return "npm";
+}
+
+function installCommand(packageManager: PackageManager): { command: string; args: string[] } {
+  if (packageManager === "bun") return { command: "bun", args: ["install"] };
+  if (packageManager === "pnpm") return { command: "pnpm", args: ["install"] };
+  if (packageManager === "yarn") return { command: "yarn", args: ["install"] };
+  return { command: "npm", args: ["install"] };
+}
+
+function spawnCommand(command: string, args: string[]): { command: string; args: string[] } {
+  if (process.platform === "win32" && ["npm", "pnpm", "yarn"].includes(command)) {
+    return { command: "cmd.exe", args: ["/d", "/s", "/c", command, ...args] };
+  }
+  return { command, args };
+}
+
+async function installWorkspaceDependencies(projectRoot: string, packageManager = detectPackageManager()): Promise<{ ok: boolean; command: string }> {
+  const { command, args } = installCommand(packageManager);
+  const display = [command, ...args].join(" ");
+  console.log(`Installing workspace dependencies with ${display}...`);
+  return await new Promise((resolve) => {
+    const executable = spawnCommand(command, args);
+    const child = spawn(executable.command, executable.args, {
+      cwd: projectRoot,
+      stdio: "inherit",
+      shell: false
+    });
+    child.on("error", (error) => {
+      console.warn(`Dependency install failed to start: ${error.message}`);
+      resolve({ ok: false, command: display });
+    });
+    child.on("exit", (code) => resolve({ ok: code === 0, command: display }));
+  });
+}
+
+async function runGit(projectRoot: string, args: string[]): Promise<{ ok: boolean; command: string }> {
+  const display = ["git", ...args].join(" ");
+  return await new Promise((resolve) => {
+    const child = spawn("git", args, {
+      cwd: projectRoot,
+      stdio: "ignore",
+      shell: false
+    });
+    child.on("error", () => resolve({ ok: false, command: display }));
+    child.on("exit", (code) => resolve({ ok: code === 0, command: display }));
+  });
+}
+
+async function initializeGitRepository(projectRoot: string): Promise<{ ok: boolean; command: string }> {
+  if (await exists(path.join(projectRoot, ".git"))) return { ok: true, command: "git init" };
+  const initMain = await runGit(projectRoot, ["init", "--initial-branch=main"]);
+  if (initMain.ok) return initMain;
+  return await runGit(projectRoot, ["init"]);
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -97,7 +161,12 @@ function validateTimelineObject(value: unknown): { ok: boolean; errors: string[]
         if (track.type === "video") {
           if (item.source !== undefined && !isString(item.source)) errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}].source must be a string`);
           if (item.sourceStart !== undefined && !isNumber(item.sourceStart)) errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}].sourceStart must be a number`);
-        } else if (!isString(item.text)) errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}].text is required`);
+        } else {
+          if (!isString(item.text)) errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}].text is required`);
+          for (const key of ["preset", "accent", "label", "speaker"] as const) {
+            if (item[key] !== undefined && !isString(item[key])) errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}].${key} must be a string`);
+          }
+        }
       }
     }
     const firstVideoTrack = videoTracks[0];
@@ -181,8 +250,12 @@ function defaultFontFile(): string | undefined {
 
 function drawText(item: TextItem, type: TrackType): string {
   const preset = item.preset ?? (type === "title" ? "bold-center" : "bottom-caption");
-  const fontSize = preset.includes("caption") || type === "caption" ? 54 : 76;
-  const y = preset.includes("bottom") || type === "caption" ? "h-(text_h*3)" : "(h-text_h)/2";
+  const isLowerThird = preset === "lower-third";
+  const isQuoteCard = preset === "quote-card";
+  const isBottom = !isQuoteCard && (isLowerThird || preset.includes("bottom") || preset.includes("caption") || type === "caption");
+  const fontSize = isBottom ? 54 : 76;
+  const x = isLowerThird ? "w*0.08" : "(w-text_w)/2";
+  const y = isBottom ? "h-(text_h*3)" : "(h-text_h)/2";
   const boxColor = type === "title" ? "black@0.55" : "black@0.45";
   const fontFile = defaultFontFile();
   const options = [
@@ -193,7 +266,7 @@ function drawText(item: TextItem, type: TrackType): string {
     "box=1",
     `boxcolor=${boxColor}`,
     "boxborderw=28",
-    "x=(w-text_w)/2",
+    `x=${x}`,
     `y=${y}`,
     `enable='between(t,${item.start},${item.end})'`
   ];
@@ -253,7 +326,53 @@ async function runFfmpeg(args: string[]): Promise<void> {
   });
 }
 
-async function doctor(): Promise<void> {
+async function readPackageVersion(): Promise<string> {
+  const packageJson = JSON.parse(await readFile(path.join(packageRoot, "package.json"), "utf8")) as { version?: string };
+  return packageJson.version ?? "0.0.0";
+}
+
+function compareVersions(a: string, b: string): number {
+  const left = a.split(/[.-]/).map((part) => Number.parseInt(part, 10) || 0);
+  const right = b.split(/[.-]/).map((part) => Number.parseInt(part, 10) || 0);
+  const length = Math.max(left.length, right.length);
+  for (let index = 0; index < length; index += 1) {
+    const delta = (left[index] ?? 0) - (right[index] ?? 0);
+    if (delta !== 0) return delta;
+  }
+  return 0;
+}
+
+async function npmViewVersion(packageName: string): Promise<string | undefined> {
+  return await new Promise((resolve) => {
+    const executable = spawnCommand("npm", ["view", packageName, "version", "--silent"]);
+    const child = spawn(executable.command, executable.args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: false
+    });
+    let output = "";
+    child.stdout?.on("data", (chunk: Buffer) => { output += chunk.toString(); });
+    child.on("error", () => resolve(undefined));
+    child.on("exit", (code) => resolve(code === 0 ? output.trim().split(/\s+/)[0] : undefined));
+  });
+}
+
+async function checkForUpdates(): Promise<void> {
+  const current = await readPackageVersion();
+  const latest = await npmViewVersion("henshusha");
+  if (!latest) {
+    console.warn("Could not check npm for henshusha updates.");
+    return;
+  }
+  if (compareVersions(latest, current) > 0) {
+    console.log(`Update available: henshusha ${current} -> ${latest}`);
+    console.log("Update command: npm install -g henshusha@latest, or rerun with npx henshusha@latest");
+    console.log("Workspace update path: npx henshusha@latest doctor --updates now; full workspace upgrade command is planned.");
+    return;
+  }
+  console.log(`henshusha is up to date (${current}).`);
+}
+
+async function doctor(argv: string[] = []): Promise<void> {
   console.log("Henshusha doctor");
   await new Promise<void>((resolve) => {
     const child = spawn("ffmpeg", ["-version"], { stdio: "ignore" });
@@ -266,6 +385,7 @@ async function doctor(): Promise<void> {
       resolve();
     });
   });
+  if (hasFlag(argv, "--updates")) await checkForUpdates();
 }
 
 async function validateProject(argv: string[]): Promise<void> {
@@ -287,7 +407,7 @@ interface RenderPlan {
   dryRun: true;
   render: Timeline["render"];
   inputs: Array<{ path: string; role: "video" }>;
-  overlays: Array<{ trackId: string; type: "title" | "caption"; start: number; end: number; text: string; preset?: string }>;
+  overlays: Array<{ trackId: string; type: "title" | "caption"; start: number; end: number; text: string; preset?: string; accent?: string; label?: string; speaker?: string }>;
   ffmpeg: {
     executable: "ffmpeg";
     args: string[];
@@ -330,7 +450,10 @@ function timelineOverlays(timeline: Timeline): RenderPlan["overlays"] {
     start: item.start,
     end: item.end,
     text: item.text,
-    ...(item.preset ? { preset: item.preset } : {})
+    ...(item.preset ? { preset: item.preset } : {}),
+    ...(item.accent ? { accent: item.accent } : {}),
+    ...(item.label ? { label: item.label } : {}),
+    ...(item.speaker ? { speaker: item.speaker } : {})
   })));
 }
 
@@ -434,23 +557,37 @@ async function newProject(argv: string[]): Promise<void> {
   console.log(`Created Henshusha video project at ${targetDir}`);
 }
 
-function parseScaffoldArgs(argv: string[]): { workspaceName: string; targetDir: string } {
-  const workspaceName = argv[0] ?? "henshusha-workspace";
-  if (workspaceName.startsWith("-")) throw new Error("Usage: henshusha [workspace-name]");
-  return { workspaceName, targetDir: path.resolve(process.cwd(), workspaceName) };
+function parseScaffoldArgs(argv: string[]): { workspaceName: string; targetDir: string; install: boolean; git: boolean } {
+  const install = !argv.includes("--no-install");
+  const git = !argv.includes("--no-git");
+  const positional = argv.filter((value) => !["--no-install", "--install", "--no-git", "--git"].includes(value));
+  const workspaceName = positional[0] ?? "henshusha-workspace";
+  if (workspaceName.startsWith("-")) throw new Error("Usage: henshusha [workspace-name] [--no-install] [--no-git]");
+  if (positional.length > 1) throw new Error("Usage: henshusha [workspace-name] [--no-install] [--no-git]");
+  return { workspaceName, targetDir: path.resolve(process.cwd(), workspaceName), install, git };
 }
 
 export async function createHenshushaWorkspace(argv = process.argv.slice(2)): Promise<void> {
-  const { workspaceName, targetDir } = parseScaffoldArgs(argv);
+  const { workspaceName, targetDir, install, git } = parseScaffoldArgs(argv);
   if (await exists(targetDir) && (await readdir(targetDir)).length > 0) throw new Error(`Target directory is not empty: ${targetDir}`);
   const templateSource = await findFirstExisting([path.join(packageRoot, "templates", "basic"), path.resolve(process.cwd(), "packages/henshusha/templates/basic")]);
   const skillsSource = await findFirstExisting([path.join(packageRoot, "skills"), path.resolve(process.cwd(), "packages/agent-kit/skills")]);
   await copyDirectoryContents(templateSource, targetDir);
   await copySkills(skillsSource, targetDir);
   await updateWorkspaceName(targetDir, workspaceName);
+  let installResult: { ok: boolean; command: string } | undefined;
+  if (install) installResult = await installWorkspaceDependencies(targetDir);
+  let gitResult: { ok: boolean; command: string } | undefined;
+  if (git) gitResult = await initializeGitRepository(targetDir);
   console.log(`Created Henshusha workspace at ${targetDir}`);
+  if (!install) console.log("Skipped dependency install. Run npm install, pnpm install, or bun install inside the workspace.");
+  else if (!installResult?.ok) console.log(`Workspace created, but dependency install failed. Run ${installResult?.command ?? "npm install"} inside the workspace.`);
+  if (!git) console.log("Skipped git init. Run git init inside the workspace when you are ready.");
+  else if (!gitResult?.ok) console.log("Workspace created, but git init failed. Run git init inside the workspace when you are ready.");
   console.log("Next:");
   console.log(`  cd ${workspaceName}`);
+  console.log("  npm run remotion:props");
+  console.log("  npm run remotion:preview");
   console.log("  claude  # or codex / pi");
 }
 
@@ -460,9 +597,9 @@ export async function runCli(argv = process.argv.slice(2)): Promise<void> {
   if (command === "render") return renderProject(rest);
   if (command === "remotion-props") return remotionPropsProject(rest);
   if (command === "new-project") return newProject(rest);
-  if (command === "doctor") return doctor();
+  if (command === "doctor") return doctor(rest);
   if (command === "help" || command === "--help" || command === "-h") {
-    console.log("Usage: henshusha [workspace-name] | validate [project-dir] | render [project-dir] [--dry-run] [--plan-output <path>] | remotion-props [project-dir] [--output <path>] [--fps <number>] | new-project <name> | doctor");
+    console.log("Usage: henshusha [workspace-name] [--no-install] [--no-git] | validate [project-dir] | render [project-dir] [--dry-run] [--plan-output <path>] | remotion-props [project-dir] [--output <path>] [--fps <number>] | new-project <name> | doctor [--updates]");
     return;
   }
   return createHenshushaWorkspace(argv);

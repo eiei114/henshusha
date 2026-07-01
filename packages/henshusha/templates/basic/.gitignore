@@ -1,0 +1,29 @@
+node_modules/
+.env
+.env.*
+!.env.example
+
+# Henshusha generated outputs
+projects/*/sources/raw/*
+!projects/*/sources/raw/.gitkeep
+projects/*/renders/*.mp4
+projects/*/renders/*.mov
+projects/*/renders/*.webm
+projects/*/jobs/*.json
+projects/*/remotion/timeline-props.json
+
+# Keep directory placeholders
+!projects/*/renders/.gitkeep
+!projects/*/jobs/.gitkeep
+
+# Local OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Package manager caches
+.npm/
+.pnpm-store/
+.yarn/
+*.log
