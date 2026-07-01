@@ -95,6 +95,8 @@ jobs:
           test -f /tmp/henshu-local-smoke/demo/.pi/skills/henshusha-analyze-source/SKILL.md
           test -f /tmp/henshu-local-smoke/demo/projects/sample-video/timelines/main.timeline.json
           test -f /tmp/henshu-local-smoke/demo/projects/sample-video/scripts/edit-plan.md
+          test -f /tmp/henshu-local-smoke/demo/projects/sample-video/scripts/digest-story.md
+          test -f /tmp/henshu-local-smoke/demo/.claude/skills/henshusha-digest-story/SKILL.md
           test -f /tmp/henshu-local-smoke/demo/projects/sample-video/remotion/index.tsx
           test -f /tmp/henshu-local-smoke/demo/projects/sample-video/remotion/Root.tsx
           test -f /tmp/henshu-local-smoke/demo/remotion.config.ts

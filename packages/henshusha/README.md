@@ -47,3 +47,6 @@ npm run remotion:render
 ```
 
 The first renderer is a manual cut + overlay path: source video clips are concatenated, then title/caption text is overlaid with FFmpeg. The Remotion path is available for richer visual composition. Whisper/ASR and VOICEVOX/Zundamon narration are intentionally deferred.
+
+
+Packaged skills include `henshusha-digest-story`, which guides agents through a quick digest workflow: story beats → edit plan → Timeline JSON → FFmpeg dry-run/render → Remotion props/preview.

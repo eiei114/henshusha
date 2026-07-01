@@ -10,48 +10,28 @@
         "id": "video",
         "type": "video",
         "items": [
-          {
-            "source": "sources/raw/input.mp4",
-            "sourceStart": 0,
-            "start": 0,
-            "end": 4
-          },
-          {
-            "source": "sources/raw/input.mp4",
-            "sourceStart": 6,
-            "start": 4,
-            "end": 10
-          }
+          { "source": "sources/raw/input.mp4", "sourceStart": 0, "start": 0, "end": 2 },
+          { "source": "sources/raw/input.mp4", "sourceStart": 2, "start": 2, "end": 4 },
+          { "source": "sources/raw/input.mp4", "sourceStart": 4, "start": 4, "end": 7 },
+          { "source": "sources/raw/input.mp4", "sourceStart": 7, "start": 7, "end": 9 },
+          { "source": "sources/raw/input.mp4", "sourceStart": 9, "start": 9, "end": 10 }
         ]
       },
       {
         "id": "titles",
         "type": "title",
         "items": [
-          {
-            "start": 1,
-            "end": 3,
-            "text": "ここが見どころ",
-            "preset": "bold-center"
-          },
-          {
-            "start": 8,
-            "end": 10,
-            "text": "続きは本編で",
-            "preset": "bold-center"
-          }
+          { "start": 0, "end": 2, "text": "素材からストーリーへ", "preset": "bold-center" },
+          { "start": 7, "end": 9, "text": "FFmpegでMVPを書き出し", "preset": "bold-center" }
         ]
       },
       {
         "id": "captions",
         "type": "caption",
         "items": [
-          {
-            "start": 5,
-            "end": 9,
-            "text": "手動タイムラインでカットと見出しを入れます",
-            "preset": "bottom-caption"
-          }
+          { "start": 2, "end": 4, "text": "ビートを手で決める", "preset": "bottom-caption" },
+          { "start": 4, "end": 7, "text": "Timeline JSON が編集の正本", "preset": "bottom-caption" },
+          { "start": 9, "end": 10, "text": "Remotionで次の表現へ", "preset": "bottom-caption" }
         ]
       }
     ]
@@ -64,7 +44,7 @@
       "safeArea": "short-video"
     },
     "artDirection": {
-      "preset": "manual-cut-overlay",
+      "preset": "digest-story",
       "captionStyle": "large-ja-subtitles"
     }
   }
