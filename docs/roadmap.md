@@ -10,7 +10,7 @@
 
 ## Phase 1 — MVP Pipeline
 
-- [ ] `create-henshusha` scaffolder
+- [ ] `create-henshu` scaffolder
 - [ ] Timeline JSON schema and validator
 - [ ] ASR provider interface
 - [ ] One ASR adapter

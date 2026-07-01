@@ -7,7 +7,8 @@ It is not a traditional video editor. The goal is to scaffold a local workspace 
 ## Target experience
 
 ```bash
-npx create-henshusha my-video-project
+bun create henshu my-video-project
+# or: npm create henshu my-video-project / pnpm create henshu my-video-project
 cd my-video-project
 claude # or codex / pi
 ```
@@ -31,7 +32,7 @@ source video/audio
 
 ## Packages
 
-- `create-henshusha` — `npx` workspace starter.
+- `create-henshu` — short workspace starter used as `bun create henshu` / `npm create henshu`.
 - `@henshusha/core` — config, job model, and pipeline primitives.
 - `@henshusha/timeline` — Timeline JSON schema and helpers.
 - `@henshusha/asr` — pluggable speech-to-text provider interface.

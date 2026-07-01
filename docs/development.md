@@ -21,7 +21,7 @@ pnpm dev
 
 ## Product boundary
 
-Do not add a `create-henshusha --dev` primary path. `create-henshusha` is for users creating a video workspace. Henshusha contributors should clone this repository and use the normal development scripts.
+Do not add a `create-henshu --dev` primary path. `create-henshu` is for users creating a video workspace. Henshusha contributors should clone this repository and use the normal development scripts.
 
 Generated workspaces may later support upgrades with a command like `henshusha upgrade`, but that is separate from contributor setup.
 
@@ -33,7 +33,7 @@ cd .fixtures/basic-workspace
 # open with claude / codex / pi when local skill copying exists
 ```
 
-Until `create-henshusha` exists, the fixture is a stable sandbox for checking the expected workspace layout.
+Until `create-henshu` is published and fully wired, the fixture is a stable sandbox for checking the expected workspace layout.
 
 ## Bun support
 
