@@ -24,3 +24,10 @@ Henshusha is an agent-native video editing workspace starter for Claude Code, Co
 - `packages/agent-kit` — Claude Code / Codex / Pi skills.
 - `packages/cli` — project-local command surface used by skills.
 - `packages/create-henshusha` — npx workspace starter.
+
+## Contributor workflow
+
+- Henshusha must be directly developable from this repository with `pnpm install` and `pnpm dev`.
+- Do not make Obsidian, Monofold, or `create-henshusha --dev` mandatory for contributors.
+- `create-henshusha` is the user-facing workspace starter; repo-local `pnpm dev:*` scripts are the contributor path.
+- Use `pnpm dev:fixture` for dogfooding generated workspace shape before the real scaffolder exists.

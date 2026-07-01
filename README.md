@@ -42,6 +42,25 @@ source video/audio
 - `@henshusha/agent-kit` — Claude Code / Codex / Pi skills.
 - `@henshusha/cli` — project-local command surface used by skills.
 
+## Development
+
+Henshusha can be developed directly from this repository. Obsidian/Monofold context is helpful for planning, but not required for contributors.
+
+```bash
+git clone https://github.com/eiei114/henshusha.git
+cd henshusha
+pnpm install
+pnpm dev
+```
+
+Useful scripts:
+
+- `pnpm dev` — run the default local development check.
+- `pnpm dev:doctor` — install dependencies and run typechecks.
+- `pnpm dev:fixture` — create a local dogfood workspace under `.fixtures/basic-workspace`.
+
+See [`docs/development.md`](docs/development.md) and [`docs/contributing.md`](docs/contributing.md).
+
 ## Status
 
 Planning / bootstrap. First milestone: render one captioned MP4 from one source file through the MVP Pipeline.

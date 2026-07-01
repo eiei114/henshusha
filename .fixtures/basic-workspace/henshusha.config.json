@@ -1,0 +1,7 @@
+{
+  "sourcesDir": "sources/raw",
+  "transcriptsDir": "transcripts",
+  "timelinesDir": "timelines",
+  "rendersDir": "renders",
+  "defaultAsrProvider": "mock"
+}
