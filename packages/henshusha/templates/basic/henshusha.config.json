@@ -1,7 +1,19 @@
 {
-  "sourcesDir": "sources/raw",
-  "transcriptsDir": "transcripts",
-  "timelinesDir": "timelines",
-  "rendersDir": "renders",
-  "defaultAsrProvider": "mock"
+  "schemaVersion": 1,
+  "projectsDir": "projects",
+  "defaultProject": "sample-video",
+  "defaultLanguage": "ja",
+  "defaultAsrProvider": "mock",
+  "narration": {
+    "defaultVoiceProvider": "voicevox-compatible",
+    "defaultSpeaker": "zundamon"
+  },
+  "projectLayout": {
+    "sourcesDir": "sources/raw",
+    "transcriptsDir": "transcripts",
+    "timelinesDir": "timelines",
+    "rendersDir": "renders",
+    "voicesDir": "voices",
+    "scriptsDir": "scripts"
+  }
 }

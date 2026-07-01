@@ -9,6 +9,12 @@ Draft canonical editing format.
     "path": "sources/raw/test.mp4",
     "audio": "assets/cache/test.wav"
   },
+  "narration": {
+    "provider": "voicevox-compatible",
+    "speaker": "zundamon",
+    "scriptPath": "scripts/sample-script.md",
+    "audio": "assets/zundamon.wav"
+  },
   "transcript": {
     "language": "ja",
     "segments": [
@@ -52,9 +58,17 @@ Draft canonical editing format.
       "safeArea": "short-video"
     },
     "artDirection": {
-      "preset": "clean-bold-captions",
-      "captionStyle": "karaoke-highlight"
+      "preset": "yukkuri-zundamon-lite",
+      "captionStyle": "large-ja-subtitles"
     }
   }
 }
 ```
+
+## Project-relative paths
+
+Timeline files usually live at `projects/<project-name>/timelines/*.timeline.json`. Relative media paths such as `sources/raw/sample.mp4`, `scripts/sample-script.md`, and `assets/zundamon-sample.wav` are relative to that video project folder.
+
+## Narration
+
+`narration` is optional and supports script-first videos. The initial starter uses `provider: "voicevox-compatible"` and `speaker: "zundamon"` for a lightweight Zundamon / Yukkuri-style path without hardcoding engine-specific speaker IDs.

@@ -28,3 +28,9 @@ OpenAI Whisper should not be a hard dependency. The MVP should support a provide
 ## Render variants
 
 Aspect ratio and art direction are job-level choices, not project-wide constants. The same timeline should be able to render 16:9, 9:16, or 1:1 variants.
+
+## Workspace and video project boundaries
+
+A Henshusha workspace is the root opened by Claude Code, Codex, or Pi. Agent skills live at the workspace root. Individual videos or series live below `projects/<project-name>/`. Paths inside a Timeline JSON are interpreted relative to the containing video project unless they are absolute.
+
+The starter keeps Japanese narration provider-neutral: `voicevox-compatible` identifies the adapter family, while speaker IDs remain adapter-specific config outside the canonical Timeline JSON.

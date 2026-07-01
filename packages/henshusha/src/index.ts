@@ -60,9 +60,9 @@ async function updateWorkspaceName(projectRoot: string, projectName: string): Pr
 
 function parseArgs(argv: string[]): { projectName: string; targetDir: string } {
   const [projectNameArg] = argv;
-  const projectName = projectNameArg ?? "henshusha-video";
+  const projectName = projectNameArg ?? "henshusha-workspace";
   if (projectName.startsWith("-")) {
-    throw new Error("Usage: henshusha [project-name]");
+    throw new Error("Usage: henshusha [workspace-name]");
   }
   return {
     projectName,

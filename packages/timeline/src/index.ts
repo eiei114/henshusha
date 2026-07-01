@@ -15,12 +15,20 @@ export interface TimelineSegment {
   words?: TimelineWord[];
 }
 
+export interface TimelineNarration {
+  provider: string;
+  speaker: string;
+  scriptPath?: string;
+  audio?: string;
+}
+
 export interface HenshushaTimeline {
   version: "0.1";
   source: {
     path: string;
     audio?: string;
   };
+  narration?: TimelineNarration;
   transcript: {
     language: string;
     segments: TimelineSegment[];
@@ -70,6 +78,19 @@ export function validateTimeline(value: unknown): TimelineValidationResult {
 
   if (!isRecord(value.source) || !isString(value.source.path)) {
     errors.push("source.path is required");
+  }
+
+  if (value.narration !== undefined) {
+    if (!isRecord(value.narration)) {
+      errors.push("narration must be an object");
+    } else {
+      if (!isString(value.narration.provider)) {
+        errors.push("narration.provider is required when narration is set");
+      }
+      if (!isString(value.narration.speaker)) {
+        errors.push("narration.speaker is required when narration is set");
+      }
+    }
   }
 
   if (!isRecord(value.transcript)) {

@@ -1,23 +1,30 @@
 # henshusha
 
-Create a Henshusha video editing workspace.
+Create a Henshusha agent-native video editing workspace.
 
 ```bash
-bunx henshusha my-video-project
+npx henshusha my-studio
 # or
-npx henshusha my-video-project
-pnpx henshusha my-video-project
+bunx henshusha my-studio
 ```
 
-The generated workspace includes:
+The generated workspace is not a single-video project. It is a studio root that can contain many video projects:
 
-- `.claude/skills/`
-- `.codex/skills/`
-- `.pi/skills/`
-- `sources/raw/`
-- `transcripts/`
-- `timelines/`
-- `renders/`
-- sample Timeline JSON
+```txt
+my-studio/
+  henshusha.config.json
+  projects/
+    sample-video/
+      sources/raw/
+      scripts/
+      voices/
+      transcripts/
+      timelines/
+      renders/
+      jobs/
+  .claude/skills/
+  .codex/skills/
+  .pi/skills/
+```
 
-Henshusha is early. The first package focuses on creating the agent-editable workspace shape.
+The starter includes a Japanese sample project configured for a lightweight Zundamon / Yukkuri-style narration workflow through a provider-neutral `voicevox-compatible` voice preset.

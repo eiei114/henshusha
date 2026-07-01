@@ -9,9 +9,10 @@ Use when the user asks to render, export, preview output, or create final MP4 va
 
 ## Workflow
 
-1. Validate the selected Timeline JSON.
-2. Confirm render variant and output path.
-3. Render visuals with Remotion.
-4. Mux and normalize audio with FFmpeg.
-5. Write output under `renders/`.
-6. Report output path, duration, resolution, and any warnings.
+1. Identify the target video project under `projects/<project-name>/`.
+2. Validate the selected Timeline JSON.
+3. Confirm render variant, narration audio, and output path.
+4. Render visuals with Remotion.
+5. Mux and normalize audio with FFmpeg.
+6. Write output under the target video project's `renders/`.
+7. Report output path, duration, resolution, and any warnings.

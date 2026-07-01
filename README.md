@@ -7,15 +7,38 @@ It is not a traditional video editor. The goal is to scaffold a local workspace 
 ## Target experience
 
 ```bash
-bunx henshusha my-video-project
-# or: npx henshusha my-video-project / pnpx henshusha my-video-project
-cd my-video-project
+bunx henshusha my-studio
+# or: npx henshusha my-studio / pnpm dlx henshusha my-studio
+cd my-studio
 claude # or codex / pi
 ```
 
 Then ask an agent:
 
-> Analyze `sources/raw/test.mp4`, draft captions and a timeline, then render a 9:16 short.
+> Work on `projects/sample-video`: draft a Japanese Zundamon narration, create captions and a timeline, then render a 9:16 short.
+
+## Workspace model
+
+`henshusha` creates a workspace root, not a single-video folder. The workspace can contain multiple video projects under `projects/`. Each video project owns its sources, scripts, voice presets, transcripts, timelines, renders, and jobs.
+
+```txt
+my-studio/
+  henshusha.config.json
+  projects/
+    sample-video/
+      sources/raw/
+      scripts/
+      voices/
+      transcripts/
+      timelines/
+      renders/
+      jobs/
+  .claude/skills/
+  .codex/skills/
+  .pi/skills/
+```
+
+The first starter is biased toward Japanese script-first videos: Zundamon / Yukkuri-style narration via a provider-neutral `voicevox-compatible` voice preset, large Japanese captions, and 9:16 output.
 
 ## MVP Pipeline
 
