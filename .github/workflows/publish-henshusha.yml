@@ -136,7 +136,7 @@ jobs:
             rm -rf /tmp/henshu-npm-smoke/demo
             if (
               cd /tmp/henshu-npm-smoke &&
-              NPM_CONFIG_USERCONFIG=/tmp/henshu-empty-npmrc NODE_AUTH_TOKEN= npx --yes "henshusha@${{ steps.pkg.outputs.version }}" demo &&
+              NPM_CONFIG_USERCONFIG=/tmp/henshu-empty-npmrc NODE_AUTH_TOKEN= npx --yes --package "henshusha@${{ steps.pkg.outputs.version }}" -- henshusha demo &&
               test -f /tmp/henshu-npm-smoke/demo/.claude/skills/henshusha-render/SKILL.md &&
               test -f /tmp/henshu-npm-smoke/demo/.claude/skills/henshusha-digest-story/SKILL.md &&
               test -f /tmp/henshu-npm-smoke/demo/projects/sample-video/scripts/edit-plan.md &&
