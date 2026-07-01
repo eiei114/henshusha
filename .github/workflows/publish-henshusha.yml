@@ -131,11 +131,12 @@ jobs:
         run: |
           rm -rf /tmp/henshu-npm-smoke
           mkdir -p /tmp/henshu-npm-smoke
+          touch /tmp/henshu-empty-npmrc
           for attempt in {1..12}; do
             rm -rf /tmp/henshu-npm-smoke/demo
             if (
               cd /tmp/henshu-npm-smoke &&
-              npx --yes "henshusha@${{ steps.pkg.outputs.version }}" demo &&
+              NPM_CONFIG_USERCONFIG=/tmp/henshu-empty-npmrc NODE_AUTH_TOKEN= npx --yes "henshusha@${{ steps.pkg.outputs.version }}" demo &&
               test -f /tmp/henshu-npm-smoke/demo/.claude/skills/henshusha-render/SKILL.md &&
               test -f /tmp/henshu-npm-smoke/demo/.claude/skills/henshusha-digest-story/SKILL.md &&
               test -f /tmp/henshu-npm-smoke/demo/projects/sample-video/scripts/edit-plan.md &&
@@ -148,7 +149,7 @@ jobs:
               exit 1
             fi
             echo "npx smoke failed or scaffold incomplete; retrying ($attempt/12)..."
-            npm cache clean --force || true
+            NPM_CONFIG_USERCONFIG=/tmp/henshu-empty-npmrc npm cache clean --force || true
             sleep 10
           done
 
@@ -158,11 +159,12 @@ jobs:
         run: |
           rm -rf /tmp/henshu-bun-smoke
           mkdir -p /tmp/henshu-bun-smoke
+          touch /tmp/henshu-empty-npmrc
           for attempt in {1..12}; do
             rm -rf /tmp/henshu-bun-smoke/demo
             if (
               cd /tmp/henshu-bun-smoke &&
-              bunx "henshusha@${{ steps.pkg.outputs.version }}" demo &&
+              NPM_CONFIG_USERCONFIG=/tmp/henshu-empty-npmrc NODE_AUTH_TOKEN= bunx "henshusha@${{ steps.pkg.outputs.version }}" demo &&
               test -f /tmp/henshu-bun-smoke/demo/.codex/skills/henshusha-edit-timeline/SKILL.md &&
               test -f /tmp/henshu-bun-smoke/demo/.pi/skills/henshusha-digest-story/SKILL.md &&
               test -f /tmp/henshu-bun-smoke/demo/projects/sample-video/timelines/main.timeline.json &&
