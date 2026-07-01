@@ -130,6 +130,26 @@ function parseOption(argv: string[], name: string): string | undefined {
   return value;
 }
 
+function hasFlag(argv: string[], name: string): boolean {
+  return argv.includes(name);
+}
+
+const valueOptions = new Set(["--timeline", "--output", "--plan-output"]);
+
+function firstPositional(argv: string[], fallback: string): string {
+  for (let index = 0; index < argv.length; index += 1) {
+    const value = argv[index];
+    if (!value) continue;
+    if (valueOptions.has(value)) {
+      index += 1;
+      continue;
+    }
+    if (value.startsWith("--")) continue;
+    return value;
+  }
+  return fallback;
+}
+
 async function findTimelinePath(projectRoot: string, explicit?: string): Promise<string> {
   if (explicit) return path.isAbsolute(explicit) ? explicit : path.resolve(projectRoot, explicit);
   for (const name of ["main.timeline.json", "sample.timeline.json"]) {
@@ -242,7 +262,7 @@ async function doctor(): Promise<void> {
 }
 
 async function validateProject(argv: string[]): Promise<void> {
-  const projectRoot = path.resolve(process.cwd(), argv[0] ?? "projects/sample-video");
+  const projectRoot = path.resolve(process.cwd(), firstPositional(argv, "projects/sample-video"));
   const timelinePath = await findTimelinePath(projectRoot, parseOption(argv, "--timeline"));
   const result = validateTimelineObject(JSON.parse(await readFile(timelinePath, "utf8")) as unknown);
   if (!result.ok) throw new Error(`Invalid Henshusha timeline:\n${result.errors.join("\n")}`);
@@ -250,13 +270,90 @@ async function validateProject(argv: string[]): Promise<void> {
   for (const warning of result.warnings) console.warn(`Warning: ${warning}`);
 }
 
+interface RenderPlan {
+  schemaVersion: 1;
+  kind: "henshusha.render-plan";
+  createdAt: string;
+  projectRoot: string;
+  timelinePath: string;
+  outputPath: string;
+  dryRun: true;
+  render: Timeline["render"];
+  inputs: Array<{ path: string; role: "video" }>;
+  overlays: Array<{ trackId: string; type: "title" | "caption"; start: number; end: number; text: string; preset?: string }>;
+  ffmpeg: {
+    executable: "ffmpeg";
+    args: string[];
+    command: string;
+  };
+}
+
+function shellQuote(value: string): string {
+  if (/^[A-Za-z0-9_./:=+@%-]+$/.test(value)) return value;
+  return JSON.stringify(value);
+}
+
+function uniqueVideoInputs(projectRoot: string, timeline: Timeline): Array<{ path: string; role: "video" }> {
+  const inputs = new Set<string>();
+  for (const item of videoTrack(timeline).items as VideoItem[]) {
+    const source = item.source ?? timeline.source?.path;
+    if (source) inputs.add(projectPath(projectRoot, source));
+  }
+  if (inputs.size === 0 && timeline.source?.path) inputs.add(projectPath(projectRoot, timeline.source.path));
+  return [...inputs].map((inputPath) => ({ path: inputPath, role: "video" as const }));
+}
+
+function timelineOverlays(timeline: Timeline): RenderPlan["overlays"] {
+  return textTracks(timeline).flatMap((track) => (track.items as TextItem[]).map((item) => ({
+    trackId: track.id,
+    type: track.type as "title" | "caption",
+    start: item.start,
+    end: item.end,
+    text: item.text,
+    ...(item.preset ? { preset: item.preset } : {})
+  })));
+}
+
+function buildRenderPlan(projectRoot: string, timelinePath: string, timeline: Timeline, output: string, ffmpegArgs: string[]): RenderPlan {
+  return {
+    schemaVersion: 1,
+    kind: "henshusha.render-plan",
+    createdAt: new Date().toISOString(),
+    projectRoot,
+    timelinePath,
+    outputPath: output,
+    dryRun: true,
+    render: timeline.render,
+    inputs: uniqueVideoInputs(projectRoot, timeline),
+    overlays: timelineOverlays(timeline),
+    ffmpeg: {
+      executable: "ffmpeg",
+      args: ffmpegArgs,
+      command: ["ffmpeg", ...ffmpegArgs].map(shellQuote).join(" ")
+    }
+  };
+}
+
+async function writeRenderPlan(projectRoot: string, timelinePath: string, timeline: Timeline, output: string, planOutput?: string): Promise<string> {
+  const ffmpegArgs = buildFfmpegArgs(projectRoot, timeline, output);
+  const planPath = projectPath(projectRoot, planOutput ?? "jobs/render-plan.json");
+  await mkdir(path.dirname(planPath), { recursive: true });
+  await writeFile(planPath, `${JSON.stringify(buildRenderPlan(projectRoot, timelinePath, timeline, output, ffmpegArgs), null, 2)}\n`, "utf8");
+  return planPath;
+}
+
 async function renderProject(argv: string[]): Promise<void> {
-  const projectRoot = path.resolve(process.cwd(), argv[0] ?? "projects/sample-video");
+  const projectRoot = path.resolve(process.cwd(), firstPositional(argv, "projects/sample-video"));
   const timelinePath = await findTimelinePath(projectRoot, parseOption(argv, "--timeline"));
   const timeline = await readTimeline(timelinePath);
   const validation = validateTimelineObject(timeline);
   for (const warning of validation.warnings) console.warn(`Warning: ${warning}`);
   const output = outputPath(projectRoot, timeline, parseOption(argv, "--output"));
+  if (hasFlag(argv, "--dry-run")) {
+    const planPath = await writeRenderPlan(projectRoot, timelinePath, timeline, output, parseOption(argv, "--plan-output"));
+    console.log(`Wrote render plan: ${path.relative(process.cwd(), planPath)}`);
+    return;
+  }
   await mkdir(path.dirname(output), { recursive: true });
   console.log(`Rendering ${path.relative(process.cwd(), timelinePath)} -> ${path.relative(process.cwd(), output)}`);
   await runFfmpeg(buildFfmpegArgs(projectRoot, timeline, output));
@@ -303,7 +400,7 @@ export async function runCli(argv = process.argv.slice(2)): Promise<void> {
   if (command === "new-project") return newProject(rest);
   if (command === "doctor") return doctor();
   if (command === "help" || command === "--help" || command === "-h") {
-    console.log("Usage: henshusha [workspace-name] | validate [project-dir] | render [project-dir] | new-project <name> | doctor");
+    console.log("Usage: henshusha [workspace-name] | validate [project-dir] | render [project-dir] [--dry-run] [--plan-output <path>] | new-project <name> | doctor");
     return;
   }
   return createHenshushaWorkspace(argv);

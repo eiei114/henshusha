@@ -23,4 +23,5 @@ MVP path:
 2. Edit `projects/sample-video/scripts/edit-plan.md`.
 3. Convert the plan into `projects/sample-video/timelines/main.timeline.json`.
 4. Run `npx henshusha validate projects/sample-video`.
-5. Run `npx henshusha render projects/sample-video` when FFmpeg is installed.
+5. Run `npx henshusha render projects/sample-video --dry-run` to inspect `projects/sample-video/jobs/render-plan.json`.
+6. Run `npx henshusha render projects/sample-video` when FFmpeg is installed.

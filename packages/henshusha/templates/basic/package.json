@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "validate": "npx henshusha validate projects/sample-video",
+    "render:dry-run": "npx henshusha render projects/sample-video --dry-run",
     "render": "npx henshusha render projects/sample-video",
     "new-project": "npx henshusha new-project"
   }

@@ -95,6 +95,9 @@ jobs:
           test -f /tmp/henshu-local-smoke/demo/.pi/skills/henshusha-analyze-source/SKILL.md
           test -f /tmp/henshu-local-smoke/demo/projects/sample-video/timelines/main.timeline.json
           test -f /tmp/henshu-local-smoke/demo/projects/sample-video/scripts/edit-plan.md
+          (cd /tmp/henshu-local-smoke/demo && node "$GITHUB_WORKSPACE/${PACKAGE_DIR}/dist/index.js" validate projects/sample-video)
+          (cd /tmp/henshu-local-smoke/demo && node "$GITHUB_WORKSPACE/${PACKAGE_DIR}/dist/index.js" render projects/sample-video --dry-run)
+          test -f /tmp/henshu-local-smoke/demo/projects/sample-video/jobs/render-plan.json
 
       - name: Publish to npm with trusted publishing
         if: steps.exists.outputs.exists == 'false'

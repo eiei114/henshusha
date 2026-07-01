@@ -30,8 +30,11 @@ MVP commands:
 
 ```bash
 npx henshusha validate projects/sample-video
+npx henshusha render projects/sample-video --dry-run
 npx henshusha render projects/sample-video
 npx henshusha new-project next-video
 ```
+
+`render --dry-run` writes `projects/<project>/jobs/render-plan.json` with resolved paths, overlay timings, and the FFmpeg command without requiring FFmpeg to run.
 
 The first renderer is a manual cut + overlay path: source video clips are concatenated, then title/caption text is overlaid with FFmpeg. Whisper/ASR and VOICEVOX/Zundamon narration are intentionally deferred.
