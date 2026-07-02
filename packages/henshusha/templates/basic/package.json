@@ -3,13 +3,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "validate": "npx henshusha validate projects/sample-video",
-    "render:dry-run": "npx henshusha render projects/sample-video --dry-run",
-    "render": "npx henshusha render projects/sample-video",
-    "remotion:props": "npx henshusha remotion-props projects/sample-video",
-    "remotion:preview": "npm run remotion:props && remotion preview projects/sample-video/remotion/index.tsx",
-    "remotion:render": "npm run remotion:props && remotion render projects/sample-video/remotion/index.tsx HenshushaTimeline projects/sample-video/renders/remotion-output.mp4",
-    "new-project": "npx henshusha new-project"
+    "validate": "henshusha validate projects/sample-video",
+    "render:dry-run": "henshusha render projects/sample-video --dry-run",
+    "render": "henshusha render projects/sample-video",
+    "remotion:props": "henshusha remotion-props projects/sample-video",
+    "remotion:preview": "henshusha remotion-props projects/sample-video && remotion preview projects/sample-video/remotion/index.tsx",
+    "remotion:render": "henshusha remotion-props projects/sample-video && remotion render projects/sample-video/remotion/index.tsx HenshushaTimeline projects/sample-video/renders/remotion-output.mp4",
+    "new-project": "henshusha new-project",
+    "doctor:updates": "henshusha doctor --updates"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.484",
@@ -21,6 +22,7 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "henshusha": "0.4.6",
     "typescript": "^5.5.4"
   }
 }

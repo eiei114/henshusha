@@ -16,7 +16,7 @@ raw video → 3-5 story beats → `scripts/digest-story.md` → `scripts/edit-pl
 ## Workflow
 
 1. Identify the target video project under `projects/<project-name>/` (default: `projects/sample-video`).
-2. Run `npx henshusha doctor --updates` when network access is acceptable. If an update is available, tell the user before editing; do not block the digest if the check fails.
+2. Run `npm run doctor:updates` when working inside a generated workspace and network access is acceptable. If an update is available, tell the user before editing; do not block the digest if the check fails.
 3. Confirm source media under `sources/raw/`.
 4. Create or update `scripts/digest-story.md` with 3-5 beats:
    - hook: why this video matters
@@ -33,10 +33,10 @@ raw video → 3-5 story beats → `scripts/digest-story.md` → `scripts/edit-pl
    - payoff/title cards can use `lower-third` or `quote-card`
    - add `accent`, `label`, or `speaker` when it clarifies the beat
 6. Encode the plan into `timelines/main.timeline.json` using only manual timings.
-7. Run `npx henshusha validate projects/<project-name>`.
-8. Run `npx henshusha render projects/<project-name> --dry-run` and inspect `jobs/render-plan.json`.
-9. Run `npx henshusha remotion-props projects/<project-name>` so Remotion can preview the same story timeline.
-10. If FFmpeg is available, run `npx henshusha render projects/<project-name>` to produce `renders/output.mp4`.
+7. Run `henshusha validate projects/<project-name>`.
+8. Run `henshusha render projects/<project-name> --dry-run` and inspect `jobs/render-plan.json`.
+9. Run `henshusha remotion-props projects/<project-name>` so Remotion can preview the same story timeline.
+10. If FFmpeg is available, run `henshusha render projects/<project-name>` to produce `renders/output.mp4`.
 11. If Remotion deps are installed, offer:
     - `npm run remotion:preview`
     - `npm run remotion:render`

@@ -25,10 +25,10 @@
 ## Render paths
 
 ```bash
-npx henshusha validate projects/sample-video
-npx henshusha render projects/sample-video --dry-run
-npx henshusha remotion-props projects/sample-video
-npx henshusha render projects/sample-video
+npm run validate
+npm run render:dry-run
+npm run remotion:props
+npm run render
 npm run remotion:preview
 ```
 

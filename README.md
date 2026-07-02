@@ -13,8 +13,8 @@ cd my-studio
 claude # or codex / pi
 ```
 
-The starter installs Remotion dependencies and initializes a local Git repository by default. Use `--no-install` or `--no-git` when you need a lighter scaffold.
-Run `npx henshusha doctor --updates` inside a workspace to check whether a newer package is available.
+The starter installs Remotion dependencies, initializes a local Git repository, and pins a workspace-local `henshusha` CLI by default. Use `--no-install` or `--no-git` when you need a lighter scaffold.
+Run `npm run doctor:updates` inside a generated workspace to check whether a newer package is available.
 
 Then ask an agent:
 
