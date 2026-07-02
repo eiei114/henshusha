@@ -716,7 +716,10 @@ function resolveExistingPath(target: string | undefined): string | undefined {
   }
 }
 
-if (resolveExistingPath(process.argv[1]) === resolveExistingPath(currentFile)) {
+const invokedFile = resolveExistingPath(process.argv[1]);
+const resolvedCurrentFile = resolveExistingPath(currentFile);
+
+if (invokedFile && resolvedCurrentFile && invokedFile === resolvedCurrentFile) {
   runCli().catch((error: unknown) => {
     console.error(error instanceof Error ? error.message : error);
     process.exitCode = 1;
