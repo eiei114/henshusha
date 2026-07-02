@@ -1,5 +1,10 @@
 # Henshusha
 
+[![npm version](https://img.shields.io/npm/v/henshusha?logo=npm)](https://www.npmjs.com/package/henshusha)
+[![npm downloads](https://img.shields.io/npm/dm/henshusha?logo=npm&label=downloads%2Fmonth)](https://www.npmjs.com/package/henshusha)
+[![publish](https://img.shields.io/github/actions/workflow/status/eiei114/henshusha/publish-henshusha.yml?branch=main&label=publish)](https://github.com/eiei114/henshusha/actions/workflows/publish-henshusha.yml)
+[![license](https://img.shields.io/npm/l/henshusha)](./LICENSE)
+
 Henshusha is an agent-native video editing workspace for Claude Code, Codex, and Pi.
 
 It is not a traditional video editor. The goal is to scaffold a local workspace where AI coding agents can analyze source media, generate transcripts, edit a canonical Timeline JSON file, and render videos through Remotion and FFmpeg.
@@ -7,10 +12,23 @@ It is not a traditional video editor. The goal is to scaffold a local workspace 
 ## Target experience
 
 ```bash
-bunx henshusha my-studio
-# or: npx henshusha my-studio / pnpm dlx henshusha my-studio
+bunx henshusha@latest my-studio
+# or: npx henshusha@latest my-studio / pnpm dlx henshusha@latest my-studio
 cd my-studio
 claude # or codex / pi
+```
+
+Recommended for Bun users: keep `@latest` on the first scaffold command so Bun does not reuse an older cached starter.
+
+```bash
+bunx henshusha@latest demo
+```
+
+If Bun still reuses an old cache:
+
+```bash
+bun pm cache rm
+bunx henshusha@latest my-studio
 ```
 
 The starter installs Remotion dependencies, initializes a local Git repository, and pins a workspace-local `henshusha` CLI by default. Use `--no-install` or `--no-git` when you need a lighter scaffold.
@@ -59,7 +77,7 @@ source video
 
 ## Packages
 
-- `henshusha` — short workspace starter used as `bunx henshusha` / `npx henshusha`.
+- `henshusha` — short workspace starter used as `bunx henshusha@latest` / `npx henshusha@latest`.
 - `@henshusha/core` — config, job model, and pipeline primitives.
 - `@henshusha/timeline` — Timeline JSON schema and helpers.
 - `@henshusha/asr` — pluggable speech-to-text provider interface.
