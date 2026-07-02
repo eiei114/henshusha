@@ -1,12 +1,32 @@
 # henshusha
 
+[![npm version](https://img.shields.io/npm/v/henshusha?logo=npm)](https://www.npmjs.com/package/henshusha)
+[![npm downloads](https://img.shields.io/npm/dm/henshusha?logo=npm&label=downloads%2Fmonth)](https://www.npmjs.com/package/henshusha)
+[![publish](https://img.shields.io/github/actions/workflow/status/eiei114/henshusha/publish-henshusha.yml?branch=main&label=publish)](https://github.com/eiei114/henshusha/actions/workflows/publish-henshusha.yml)
+[![license](https://img.shields.io/npm/l/henshusha)](https://github.com/eiei114/henshusha/blob/main/LICENSE)
+
 Create and operate a Henshusha agent-native video editing workspace.
 
 ```bash
-npx henshusha my-studio
+npx henshusha@latest my-studio
 # or
-bunx henshusha my-studio
+bunx henshusha@latest my-studio
 ```
+
+Recommended for Bun users on the first run:
+
+```bash
+bunx henshusha@latest demo
+```
+
+If Bun still reuses an old cached package:
+
+```bash
+bun pm cache rm
+bunx henshusha@latest my-studio
+```
+
+Repository CI keeps this starter checked in three layers: fast PR checks on Ubuntu, cross-platform CLI smoke on Ubuntu/macOS/Windows, and publish-time `npx` / `bunx` verification after npm propagation.
 
 Scaffolding installs workspace dependencies and runs `git init` by default so the first Remotion preview and GitHub handoff are ready quickly. Use `--no-install` or `--no-git` to opt out.
 
