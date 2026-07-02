@@ -287,7 +287,31 @@ function outputPath(projectRoot: string, timeline: Timeline, override?: string):
   return projectPath(projectRoot, override ?? timeline.render.output ?? "renders/output.mp4");
 }
 
-function buildFfmpegArgs(projectRoot: string, timeline: Timeline, output: string): string[] {
+function primarySourcePath(projectRoot: string, timeline: Timeline): string {
+  const items = videoTrack(timeline).items as VideoItem[];
+  const firstItem = items[0];
+  const source = firstItem?.source ?? timeline.source?.path;
+  if (!source) throw new Error("source.path or first video item source is required");
+  return projectPath(projectRoot, source);
+}
+
+async function probeHasAudio(mediaPath: string): Promise<boolean> {
+  return await new Promise((resolve) => {
+    const child = spawn("ffprobe", [
+      "-hide_banner",
+      "-select_streams", "a",
+      "-show_entries", "stream=codec_type",
+      "-of", "csv=p=0",
+      mediaPath
+    ], { stdio: ["ignore", "pipe", "ignore"] });
+    let output = "";
+    child.stdout?.on("data", (chunk: Buffer) => { output += chunk.toString(); });
+    child.on("error", () => resolve(false));
+    child.on("exit", (code) => resolve(code === 0 && output.trim().includes("audio")));
+  });
+}
+
+function buildFfmpegArgs(projectRoot: string, timeline: Timeline, output: string, hasAudio: boolean): string[] {
   const items = videoTrack(timeline).items as VideoItem[];
   if (items.length === 0) throw new Error("video track must include at least one item");
   const firstItem = items[0];
@@ -300,10 +324,14 @@ function buildFfmpegArgs(projectRoot: string, timeline: Timeline, output: string
     const sourceStart = item.sourceStart ?? 0;
     const duration = item.end - item.start;
     filters.push(`[0:v]trim=start=${sourceStart}:duration=${duration},setpts=PTS-STARTPTS[v${index}]`);
-    filters.push(`[0:a]atrim=start=${sourceStart}:duration=${duration},asetpts=PTS-STARTPTS[a${index}]`);
-    concatInputs.push(`[v${index}][a${index}]`);
+    if (hasAudio) {
+      filters.push(`[0:a]atrim=start=${sourceStart}:duration=${duration},asetpts=PTS-STARTPTS[a${index}]`);
+      concatInputs.push(`[v${index}][a${index}]`);
+    } else {
+      concatInputs.push(`[v${index}]`);
+    }
   }
-  filters.push(`${concatInputs.join("")}concat=n=${items.length}:v=1:a=1[cv][ca]`);
+  filters.push(`${concatInputs.join("")}concat=n=${items.length}:v=1:a=${hasAudio ? 1 : 0}[cv]${hasAudio ? "[ca]" : ""}`);
   filters.push(`[cv]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}[base]`);
   let current = "base";
   let overlay = 0;
@@ -315,7 +343,10 @@ function buildFfmpegArgs(projectRoot: string, timeline: Timeline, output: string
       overlay += 1;
     }
   }
-  return ["-y", "-i", projectPath(projectRoot, source), "-filter_complex", filters.join(";"), "-map", `[${current}]`, "-map", "[ca]", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-movflags", "+faststart", output];
+  const args = ["-y", "-i", projectPath(projectRoot, source), "-filter_complex", filters.join(";"), "-map", `[${current}]`, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "+faststart"];
+  if (hasAudio) args.push("-map", "[ca]", "-c:a", "aac");
+  args.push(output);
+  return args;
 }
 
 async function runFfmpeg(args: string[]): Promise<void> {
@@ -372,19 +403,50 @@ async function checkForUpdates(): Promise<void> {
   console.log(`henshusha is up to date (${current}).`);
 }
 
+async function runCapture(command: string, args: string[]): Promise<{ ok: boolean; stdout: string }> {
+  return await new Promise((resolve) => {
+    const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"], shell: false });
+    let stdout = "";
+    child.stdout?.on("data", (chunk: Buffer) => { stdout += chunk.toString(); });
+    child.on("error", () => resolve({ ok: false, stdout: "" }));
+    child.on("exit", (code) => resolve({ ok: code === 0, stdout }));
+  });
+}
+
+function ffmpegInstallHints(): string[] {
+  if (process.platform === "win32") {
+    return [
+      "Windows install options:",
+      "  winget install Gyan.FFmpeg",
+      "  https://www.gyan.dev/ffmpeg/builds/",
+      "Ensure ffmpeg and ffprobe are on PATH, then rerun: henshusha doctor"
+    ];
+  }
+  return [
+    "Install options:",
+    "  macOS: brew install ffmpeg",
+    "  Linux: use your distro package manager or https://ffmpeg.org/download.html",
+    "Ensure ffmpeg and ffprobe are on PATH, then rerun: henshusha doctor"
+  ];
+}
+
 async function doctor(argv: string[] = []): Promise<void> {
   console.log("Henshusha doctor");
-  await new Promise<void>((resolve) => {
-    const child = spawn("ffmpeg", ["-version"], { stdio: "ignore" });
-    child.on("error", () => {
-      console.warn("ffmpeg: missing (required for render)");
-      resolve();
-    });
-    child.on("exit", (code) => {
-      console.log(code === 0 ? "ffmpeg: ok" : `ffmpeg: exited with code ${code ?? "unknown"}`);
-      resolve();
-    });
-  });
+  const ffmpegVersion = await runCapture("ffmpeg", ["-version"]);
+  const ffprobeVersion = await runCapture("ffprobe", ["-version"]);
+  if (ffmpegVersion.ok) {
+    const firstLine = ffmpegVersion.stdout.split(/\r?\n/)[0] ?? "ffmpeg";
+    console.log(`ffmpeg: ok (${firstLine})`);
+  } else {
+    console.warn("ffmpeg: missing (required for render)");
+    for (const line of ffmpegInstallHints()) console.warn(line);
+  }
+  if (ffprobeVersion.ok) {
+    const firstLine = ffprobeVersion.stdout.split(/\r?\n/)[0] ?? "ffprobe";
+    console.log(`ffprobe: ok (${firstLine})`);
+  } else {
+    console.warn("ffprobe: missing (required for render metadata checks)");
+  }
   if (hasFlag(argv, "--updates")) await checkForUpdates();
 }
 
@@ -412,6 +474,7 @@ interface RenderPlan {
     executable: "ffmpeg";
     args: string[];
     command: string;
+    hasAudio: boolean;
   };
 }
 
@@ -457,7 +520,7 @@ function timelineOverlays(timeline: Timeline): RenderPlan["overlays"] {
   })));
 }
 
-function buildRenderPlan(projectRoot: string, timelinePath: string, timeline: Timeline, output: string, ffmpegArgs: string[]): RenderPlan {
+function buildRenderPlan(projectRoot: string, timelinePath: string, timeline: Timeline, output: string, ffmpegArgs: string[], hasAudio: boolean): RenderPlan {
   return {
     schemaVersion: 1,
     kind: "henshusha.render-plan",
@@ -472,16 +535,18 @@ function buildRenderPlan(projectRoot: string, timelinePath: string, timeline: Ti
     ffmpeg: {
       executable: "ffmpeg",
       args: ffmpegArgs,
-      command: ["ffmpeg", ...ffmpegArgs].map(shellQuote).join(" ")
+      command: ["ffmpeg", ...ffmpegArgs].map(shellQuote).join(" "),
+      hasAudio
     }
   };
 }
 
 async function writeRenderPlan(projectRoot: string, timelinePath: string, timeline: Timeline, output: string, planOutput?: string): Promise<string> {
-  const ffmpegArgs = buildFfmpegArgs(projectRoot, timeline, output);
+  const hasAudio = await probeHasAudio(primarySourcePath(projectRoot, timeline));
+  const ffmpegArgs = buildFfmpegArgs(projectRoot, timeline, output, hasAudio);
   const planPath = projectPath(projectRoot, planOutput ?? "jobs/render-plan.json");
   await mkdir(path.dirname(planPath), { recursive: true });
-  await writeFile(planPath, `${JSON.stringify(buildRenderPlan(projectRoot, timelinePath, timeline, output, ffmpegArgs), null, 2)}\n`, "utf8");
+  await writeFile(planPath, `${JSON.stringify(buildRenderPlan(projectRoot, timelinePath, timeline, output, ffmpegArgs, hasAudio), null, 2)}\n`, "utf8");
   return planPath;
 }
 
@@ -522,6 +587,8 @@ async function renderProject(argv: string[]): Promise<void> {
   const validation = validateTimelineObject(timeline);
   for (const warning of validation.warnings) console.warn(`Warning: ${warning}`);
   const output = outputPath(projectRoot, timeline, parseOption(argv, "--output"));
+  const hasAudio = await probeHasAudio(primarySourcePath(projectRoot, timeline));
+  if (!hasAudio) console.warn("Warning: source has no audio stream; rendering video-only output");
   if (hasFlag(argv, "--dry-run")) {
     const planPath = await writeRenderPlan(projectRoot, timelinePath, timeline, output, parseOption(argv, "--plan-output"));
     console.log(`Wrote render plan: ${path.relative(process.cwd(), planPath)}`);
@@ -529,7 +596,7 @@ async function renderProject(argv: string[]): Promise<void> {
   }
   await mkdir(path.dirname(output), { recursive: true });
   console.log(`Rendering ${path.relative(process.cwd(), timelinePath)} -> ${path.relative(process.cwd(), output)}`);
-  await runFfmpeg(buildFfmpegArgs(projectRoot, timeline, output));
+  await runFfmpeg(buildFfmpegArgs(projectRoot, timeline, output, hasAudio));
   console.log(`Rendered: ${output}`);
 }
 

@@ -16,6 +16,8 @@ pnpm dev
 - `pnpm dev` — run the default local development check.
 - `pnpm dev:doctor` — install dependencies and run typechecks.
 - `pnpm dev:fixture` — create `.fixtures/basic-workspace` for dogfooding generated workspace shape.
+- `pnpm dev:sample-media` — generate the tiny local `input.mp4` fixture used by render smoke tests.
+- `pnpm dev:verify-render` — run doctor, render, and `ffprobe` verification end-to-end.
 - `pnpm typecheck` — typecheck all packages.
 - `pnpm build` — build all packages that have a build script.
 
@@ -33,10 +35,14 @@ cd .fixtures/basic-workspace
 node ../../packages/henshusha/dist/index.js validate projects/sample-video
 node ../../packages/henshusha/dist/index.js render projects/sample-video --dry-run
 node ../../packages/henshusha/dist/index.js remotion-props projects/sample-video
+node ../../packages/henshusha/dist/index.js render projects/sample-video
+ffprobe -hide_banner -show_streams projects/sample-video/renders/output.mp4
 # open with claude / codex / pi when local skill copying exists
 ```
 
 The fixture is a stable sandbox for checking the expected workspace layout before publishing a starter change. The dry-run command writes `projects/sample-video/jobs/render-plan.json` without requiring FFmpeg. The Remotion props command writes `projects/sample-video/remotion/timeline-props.json`.
+
+See [`render-verification.md`](render-verification.md) for the full FFmpeg smoke-test workflow.
 
 ## Bun support
 
