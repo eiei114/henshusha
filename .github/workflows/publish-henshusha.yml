@@ -33,6 +33,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -44,11 +49,6 @@ jobs:
         run: |
           npm install -g npm@latest
           npm --version
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
