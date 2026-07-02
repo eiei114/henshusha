@@ -1,5 +1,9 @@
 # Henshusha
 
+<p align="center">
+  <img src="./assets/henshusha-icon.png" alt="Henshusha icon" width="180" />
+</p>
+
 [![npm version](https://img.shields.io/npm/v/henshusha?logo=npm)](https://www.npmjs.com/package/henshusha)
 [![npm downloads](https://img.shields.io/npm/dm/henshusha?logo=npm&label=downloads%2Fmonth)](https://www.npmjs.com/package/henshusha)
 [![publish](https://img.shields.io/github/actions/workflow/status/eiei114/henshusha/publish-henshusha.yml?branch=main&label=publish)](https://github.com/eiei114/henshusha/actions/workflows/publish-henshusha.yml)

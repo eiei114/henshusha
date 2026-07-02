@@ -1,12 +1,13 @@
 {
   "name": "henshusha",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "private": false,
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist",
+    "assets",
     "templates",
     "skills"
   ],
