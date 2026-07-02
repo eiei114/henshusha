@@ -107,6 +107,14 @@ Useful scripts:
 
 See [`docs/development.md`](docs/development.md) and [`docs/contributing.md`](docs/contributing.md).
 
+## CI and automation
+
+- **CI** runs on every PR and on pushes to `main` with a fast Ubuntu path for `pnpm typecheck` + `pnpm test:henshusha`.
+- **Cross-platform smoke** runs the CLI entry regression on Ubuntu, macOS, and Windows so starter behavior stays portable.
+- **Publish** stays release-focused: build, local smoke, npm publish, then real `npx` / `bunx` verification after registry propagation.
+- **Dependabot** keeps npm dependencies and GitHub Actions up to date in weekly grouped PRs.
+- **Dependency Review** runs on PRs to flag risky dependency changes before merge.
+
 ## Status
 
 Planning / bootstrap. First milestone: render one captioned MP4 from one source file through the MVP Pipeline.

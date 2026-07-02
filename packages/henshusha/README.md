@@ -26,6 +26,8 @@ bun pm cache rm
 bunx henshusha@latest my-studio
 ```
 
+Repository CI keeps this starter checked in three layers: fast PR checks on Ubuntu, cross-platform CLI smoke on Ubuntu/macOS/Windows, and publish-time `npx` / `bunx` verification after npm propagation.
+
 Scaffolding installs workspace dependencies and runs `git init` by default so the first Remotion preview and GitHub handoff are ready quickly. Use `--no-install` or `--no-git` to opt out.
 
 The generated workspace is not a single-video project. It is a studio root that can contain many video projects:
