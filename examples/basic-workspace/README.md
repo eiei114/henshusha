@@ -25,15 +25,15 @@ MVP path:
 2. Draft digest beats in `projects/sample-video/scripts/digest-story.md`.
 3. Edit `projects/sample-video/scripts/edit-plan.md`.
 4. Convert the plan into `projects/sample-video/timelines/main.timeline.json`.
-5. Run `npx henshusha validate projects/sample-video`.
-6. Run `npx henshusha render projects/sample-video --dry-run` to inspect `projects/sample-video/jobs/render-plan.json`.
-7. Run `npx henshusha remotion-props projects/sample-video` for Remotion preview.
-8. Run `npx henshusha render projects/sample-video` when FFmpeg is installed.
+5. Run `npm run validate`.
+6. Run `npm run render:dry-run` to inspect `projects/sample-video/jobs/render-plan.json`.
+7. Run `npm run remotion:props` for Remotion preview.
+8. Run `npm run render` when FFmpeg is installed.
 
 Check for package updates any time:
 
 ```bash
-npx henshusha doctor --updates
+npm run doctor:updates
 ```
 
 ## Remotion preview/render

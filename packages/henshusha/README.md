@@ -31,15 +31,17 @@ my-studio/
   .pi/skills/
 ```
 
-MVP commands:
+After the workspace install finishes, the generated package already includes a local `henshusha` devDependency. That keeps workspace scripts off the network on later runs.
+
+MVP commands inside the generated workspace:
 
 ```bash
-npx henshusha validate projects/sample-video
-npx henshusha render projects/sample-video --dry-run
-npx henshusha render projects/sample-video
-npx henshusha remotion-props projects/sample-video
-npx henshusha new-project next-video
-npx henshusha doctor --updates
+npm run validate
+npm run render:dry-run
+npm run render
+npm run remotion:props
+npm run doctor:updates
+npm run new-project -- next-video
 ```
 
 `render --dry-run` writes `projects/<project>/jobs/render-plan.json` with resolved paths, overlay timings, and the FFmpeg command without requiring FFmpeg to run.

@@ -48,11 +48,44 @@ async function copySkills(skillsSource: string, projectRoot: string): Promise<vo
   }
 }
 
-async function updateWorkspaceName(projectRoot: string, workspaceName: string): Promise<void> {
+function normalizePathForPackageJson(target: string): string {
+  return target.split(path.sep).join("/");
+}
+
+async function workspaceCliDependency(projectRoot: string): Promise<string> {
+  const localSourceEntry = path.join(packageRoot, "src", "index.ts");
+  if (await exists(localSourceEntry)) {
+    const relative = normalizePathForPackageJson(path.relative(projectRoot, packageRoot));
+    const safeRelative = relative.startsWith(".") ? relative : `./${relative}`;
+    return `file:${safeRelative}`;
+  }
+  return readPackageVersion();
+}
+
+async function updateWorkspacePackageJson(projectRoot: string, workspaceName: string): Promise<void> {
   const packageJsonPath = path.join(projectRoot, "package.json");
   if (!(await exists(packageJsonPath))) return;
-  const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8")) as { name?: string };
+  const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8")) as {
+    name?: string;
+    scripts?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+  };
   packageJson.name = workspaceName;
+  packageJson.scripts = {
+    ...packageJson.scripts,
+    "validate": "henshusha validate projects/sample-video",
+    "render:dry-run": "henshusha render projects/sample-video --dry-run",
+    "render": "henshusha render projects/sample-video",
+    "remotion:props": "henshusha remotion-props projects/sample-video",
+    "remotion:preview": "henshusha remotion-props projects/sample-video && remotion preview projects/sample-video/remotion/index.tsx",
+    "remotion:render": "henshusha remotion-props projects/sample-video && remotion render projects/sample-video/remotion/index.tsx HenshushaTimeline projects/sample-video/renders/remotion-output.mp4",
+    "new-project": "henshusha new-project",
+    "doctor:updates": "henshusha doctor --updates"
+  };
+  packageJson.devDependencies = {
+    ...packageJson.devDependencies,
+    "henshusha": await workspaceCliDependency(projectRoot)
+  };
   await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8");
 }
 
@@ -641,9 +674,10 @@ export async function createHenshushaWorkspace(argv = process.argv.slice(2)): Pr
   const skillsSource = await findFirstExisting([path.join(packageRoot, "skills"), path.resolve(process.cwd(), "packages/agent-kit/skills")]);
   await copyDirectoryContents(templateSource, targetDir);
   await copySkills(skillsSource, targetDir);
-  await updateWorkspaceName(targetDir, workspaceName);
+  await updateWorkspacePackageJson(targetDir, workspaceName);
+  const packageManager = detectPackageManager();
   let installResult: { ok: boolean; command: string } | undefined;
-  if (install) installResult = await installWorkspaceDependencies(targetDir);
+  if (install) installResult = await installWorkspaceDependencies(targetDir, packageManager);
   let gitResult: { ok: boolean; command: string } | undefined;
   if (git) gitResult = await initializeGitRepository(targetDir);
   console.log(`Created Henshusha workspace at ${targetDir}`);
@@ -653,8 +687,8 @@ export async function createHenshushaWorkspace(argv = process.argv.slice(2)): Pr
   else if (!gitResult?.ok) console.log("Workspace created, but git init failed. Run git init inside the workspace when you are ready.");
   console.log("Next:");
   console.log(`  cd ${workspaceName}`);
-  console.log("  npm run remotion:props");
-  console.log("  npm run remotion:preview");
+  console.log(`  ${packageManager === "yarn" ? "yarn remotion:props" : `${packageManager} run remotion:props`}`);
+  console.log(`  ${packageManager === "yarn" ? "yarn remotion:preview" : `${packageManager} run remotion:preview`}`);
   console.log("  claude  # or codex / pi");
 }
 
