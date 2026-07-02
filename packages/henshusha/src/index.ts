@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import { access, cp, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
@@ -706,7 +707,16 @@ export async function runCli(argv = process.argv.slice(2)): Promise<void> {
   return createHenshushaWorkspace(argv);
 }
 
-if (process.argv[1] === currentFile) {
+function resolveExistingPath(target: string | undefined): string | undefined {
+  if (!target) return undefined;
+  try {
+    return realpathSync(target);
+  } catch {
+    return undefined;
+  }
+}
+
+if (resolveExistingPath(process.argv[1]) === resolveExistingPath(currentFile)) {
   runCli().catch((error: unknown) => {
     console.error(error instanceof Error ? error.message : error);
     process.exitCode = 1;

@@ -59,6 +59,9 @@ jobs:
       - name: Build with Bun path
         run: bun run build:bun
 
+      - name: Verify local symlinked CLI path
+        run: node scripts/verify-henshusha-cli-entry.mjs
+
       - name: Read package version
         id: pkg
         shell: bash
@@ -127,7 +130,6 @@ jobs:
 
       - name: Verify npx path
         if: steps.exists.outputs.exists == 'false'
-        continue-on-error: true
         shell: bash
         run: |
           rm -rf /tmp/henshu-npm-smoke
@@ -156,7 +158,6 @@ jobs:
 
       - name: Verify bunx path
         if: steps.exists.outputs.exists == 'false'
-        continue-on-error: true
         shell: bash
         run: |
           rm -rf /tmp/henshu-bun-smoke

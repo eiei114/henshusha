@@ -12,6 +12,7 @@
     "dev:doctor": "node scripts/typecheck.mjs",
     "dev:fixture": "node scripts/create-fixture.mjs",
     "dev:sample-media": "node scripts/create-sample-media.mjs",
+    "test:henshusha": "pnpm --filter henshusha build && node scripts/verify-henshusha-cli-entry.mjs",
     "dev:verify-render": "node scripts/verify-render.mjs",
     "lint": "node scripts/typecheck.mjs",
     "test": "node scripts/typecheck.mjs",
