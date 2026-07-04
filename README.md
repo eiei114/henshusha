@@ -4,6 +4,8 @@ Henshusha is an agent-native video editing workspace for Claude Code, Codex, and
 
 It is not a traditional video editor. The goal is to scaffold a local workspace where AI coding agents can analyze source media, generate transcripts, edit a canonical Timeline JSON file, and render videos through Remotion and FFmpeg.
 
+<a href="https://buymeacoffee.com/ekawano114m"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="217" height="60"></a>
+
 ## Target experience
 
 ```bash
