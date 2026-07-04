@@ -43,11 +43,12 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-          cache: pnpm
+          package-manager-cache: false
 
       - name: Ensure npm supports trusted publishing
         run: |
           npm install -g npm@latest
+          node --version
           npm --version
 
       - name: Setup Bun
@@ -116,7 +117,7 @@ jobs:
 
       - name: Publish to npm with trusted publishing
         if: steps.exists.outputs.exists == 'false'
-        run: npm publish "./${PACKAGE_DIR}" --access public
+        run: npm publish "./${PACKAGE_DIR}" --provenance --access public
 
       - name: Wait for npm registry propagation
         if: steps.exists.outputs.exists == 'false'
