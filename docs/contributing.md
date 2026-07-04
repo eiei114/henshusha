@@ -38,4 +38,4 @@ Do not add package scripts that only work under pnpm unless there is a Bun-compa
 
 ## Release notes
 
-For `henshusha`, bump `packages/henshusha/package.json` before merging release changes. CI publishes only when that version is new on npm, then creates tag `v<version>`. Publishing uses npm Trusted Publishing/OIDC; do not add `NPM_TOKEN` secrets.
+For `henshusha`, bump `packages/henshusha/package.json` before merging release changes. CI publishes only when that version is new on npm, then creates tag `v<version>`. Publishing uses npm Trusted Publishing/OIDC with Node 24 plus `npm publish --provenance --access public`; do not add `NPM_TOKEN` secrets.

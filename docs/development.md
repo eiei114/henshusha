@@ -67,6 +67,8 @@ Publishing uses npm Trusted Publishing (GitHub Actions OIDC), not a long-lived `
 - Workflow filename: `publish-henshusha.yml`
 - Allowed action: `npm publish`
 
+The publish job uses Node 24 and `npm publish --provenance --access public` so npm Trusted Publishing runs with a compatible Node/npm pair and emits provenance automatically.
+
 Release flow:
 
 1. Update `packages/henshusha/package.json` version.
