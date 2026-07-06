@@ -12,7 +12,7 @@
     "skills"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "pnpm --filter @henshusha/timeline build && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "bin": {

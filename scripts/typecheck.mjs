@@ -6,13 +6,15 @@ import path from "node:path";
 const root = process.cwd();
 const packagesDir = path.join(root, "packages");
 const packageNames = (await readdir(packagesDir)).sort();
+const typecheckOrder = ["timeline", ...packageNames.filter((name) => name !== "timeline")];
 const tscBin = path.join(root, "node_modules", "typescript", "bin", "tsc");
 
-for (const packageName of packageNames) {
+async function runTsc(packageName, noEmit) {
   const tsconfig = path.join(packagesDir, packageName, "tsconfig.json");
-  console.log(`typecheck ${packageName}`);
+  const args = [tscBin, "-p", tsconfig];
+  if (noEmit) args.push("--noEmit");
   await new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [tscBin, "-p", tsconfig, "--noEmit"], {
+    const child = spawn(process.execPath, args, {
       stdio: "inherit",
       shell: false
     });
@@ -25,4 +27,12 @@ for (const packageName of packageNames) {
     });
     child.on("error", reject);
   });
+}
+
+console.log("build timeline (typecheck prerequisite)");
+await runTsc("timeline", false);
+
+for (const packageName of typecheckOrder) {
+  console.log(`typecheck ${packageName}`);
+  await runTsc(packageName, true);
 }
