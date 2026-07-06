@@ -23,7 +23,7 @@ jobs:
       - name: Review dependency changes
         id: dependency_review
         continue-on-error: true
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v5
 
       - name: Note unsupported dependency graph
         if: steps.dependency_review.outcome == 'failure'
