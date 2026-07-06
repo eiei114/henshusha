@@ -4,6 +4,7 @@ import { access, cp, mkdir, readdir, readFile, stat, writeFile } from "node:fs/p
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { formatValidationReport, parseResolution, validateTimeline } from "../../timeline/dist/index.js";
 
 const currentFile = fileURLToPath(import.meta.url);
 const currentDir = path.dirname(currentFile);
@@ -154,74 +155,12 @@ async function initializeGitRepository(projectRoot: string): Promise<{ ok: boole
   return await runGit(projectRoot, ["init"]);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 function isNumber(value: unknown): value is number { return typeof value === "number" && Number.isFinite(value); }
-function isString(value: unknown): value is string { return typeof value === "string" && value.length > 0; }
-
-function parseResolution(resolution: string): { width: number; height: number } {
-  const match = /^(\d+)x(\d+)$/.exec(resolution);
-  if (!match) throw new Error(`Invalid resolution: ${resolution}. Expected WIDTHxHEIGHT.`);
-  return { width: Number(match[1]), height: Number(match[2]) };
-}
-
-function validateTimelineObject(value: unknown): { ok: boolean; errors: string[]; warnings: string[] } {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  if (!isRecord(value)) return { ok: false, errors: ["timeline must be an object"], warnings };
-  if (value.version !== "0.1") errors.push("version must be '0.1'");
-  if (value.source !== undefined && (!isRecord(value.source) || !isString(value.source.path))) errors.push("source.path must be a non-empty string when source is set");
-  if (!isRecord(value.render) || !isRecord(value.render.variant)) errors.push("render.variant is required");
-  else {
-    const variant = value.render.variant;
-    if (!isString(variant.aspect) || !["16:9", "9:16", "1:1"].includes(variant.aspect)) errors.push("render.variant.aspect must be one of 16:9, 9:16, 1:1");
-    if (!isString(variant.resolution)) errors.push("render.variant.resolution is required");
-    else { try { parseResolution(variant.resolution); } catch (error) { errors.push(error instanceof Error ? error.message : String(error)); } }
-  }
-  if (!isRecord(value.timeline) || !Array.isArray(value.timeline.tracks)) errors.push("timeline.tracks is required for manual cut + overlay rendering");
-  else {
-    const tracks = value.timeline.tracks;
-    const videoTracks = tracks.filter((track) => isRecord(track) && track.type === "video");
-    if (videoTracks.length === 0) errors.push("timeline.tracks must include one video track");
-    for (const [trackIndex, track] of tracks.entries()) {
-      if (!isRecord(track)) { errors.push(`timeline.tracks[${trackIndex}] must be an object`); continue; }
-      if (!isString(track.id)) errors.push(`timeline.tracks[${trackIndex}].id is required`);
-      if (!["video", "title", "caption"].includes(String(track.type))) errors.push(`timeline.tracks[${trackIndex}].type must be video, title, or caption`);
-      if (!Array.isArray(track.items)) { errors.push(`timeline.tracks[${trackIndex}].items must be an array`); continue; }
-      for (const [itemIndex, item] of track.items.entries()) {
-        if (!isRecord(item)) { errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}] must be an object`); continue; }
-        if (!isNumber(item.start) || !isNumber(item.end) || item.end <= item.start) errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}] must have valid start/end`);
-        if (track.type === "video") {
-          if (item.source !== undefined && !isString(item.source)) errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}].source must be a string`);
-          if (item.sourceStart !== undefined && !isNumber(item.sourceStart)) errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}].sourceStart must be a number`);
-        } else {
-          if (!isString(item.text)) errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}].text is required`);
-          for (const key of ["preset", "accent", "label", "speaker"] as const) {
-            if (item[key] !== undefined && !isString(item[key])) errors.push(`timeline.tracks[${trackIndex}].items[${itemIndex}].${key} must be a string`);
-          }
-        }
-      }
-    }
-    const firstVideoTrack = videoTracks[0];
-    if (isRecord(firstVideoTrack) && Array.isArray(firstVideoTrack.items)) {
-      const sorted = [...firstVideoTrack.items].filter(isRecord).sort((a, b) => Number(a.start) - Number(b.start));
-      for (let index = 0; index < sorted.length; index += 1) {
-        const current = sorted[index];
-        const previous = sorted[index - 1];
-        if (current && Number(current.start) !== (index === 0 ? 0 : Number(previous?.end))) {
-          warnings.push("video items are rendered in order as a concat; gaps/overlaps are not preserved yet"); break;
-        }
-      }
-    }
-  }
-  return { ok: errors.length === 0, errors, warnings };
-}
 
 async function readTimeline(timelinePath: string): Promise<Timeline> {
   const parsed = JSON.parse(await readFile(timelinePath, "utf8")) as unknown;
-  const result = validateTimelineObject(parsed);
-  if (!result.ok) throw new Error(`Invalid Henshusha timeline:\n${result.errors.join("\n")}`);
+  const result = validateTimeline(parsed);
+  if (!result.ok) throw new Error(`Invalid Henshusha timeline:\n${formatValidationReport(result)}`);
   return parsed as Timeline;
 }
 
@@ -487,8 +426,8 @@ async function doctor(argv: string[] = []): Promise<void> {
 async function validateProject(argv: string[]): Promise<void> {
   const projectRoot = path.resolve(process.cwd(), firstPositional(argv, "projects/sample-video"));
   const timelinePath = await findTimelinePath(projectRoot, parseOption(argv, "--timeline"));
-  const result = validateTimelineObject(JSON.parse(await readFile(timelinePath, "utf8")) as unknown);
-  if (!result.ok) throw new Error(`Invalid Henshusha timeline:\n${result.errors.join("\n")}`);
+  const result = validateTimeline(JSON.parse(await readFile(timelinePath, "utf8")) as unknown);
+  if (!result.ok) throw new Error(`Invalid Henshusha timeline:\n${formatValidationReport(result)}`);
   console.log(`Valid timeline: ${path.relative(process.cwd(), timelinePath)}`);
   for (const warning of result.warnings) console.warn(`Warning: ${warning}`);
 }
@@ -618,7 +557,7 @@ async function renderProject(argv: string[]): Promise<void> {
   const projectRoot = path.resolve(process.cwd(), firstPositional(argv, "projects/sample-video"));
   const timelinePath = await findTimelinePath(projectRoot, parseOption(argv, "--timeline"));
   const timeline = await readTimeline(timelinePath);
-  const validation = validateTimelineObject(timeline);
+  const validation = validateTimeline(timeline);
   for (const warning of validation.warnings) console.warn(`Warning: ${warning}`);
   const output = outputPath(projectRoot, timeline, parseOption(argv, "--output"));
   const hasAudio = await probeHasAudio(primarySourcePath(projectRoot, timeline));
