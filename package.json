@@ -12,7 +12,7 @@
     "dev:doctor": "node scripts/typecheck.mjs",
     "dev:fixture": "node scripts/create-fixture.mjs",
     "dev:sample-media": "node scripts/create-sample-media.mjs",
-    "test:henshusha": "node scripts/build.mjs && node scripts/verify-henshusha-cli-entry.mjs",
+    "test:henshusha": "node scripts/build.mjs && node scripts/verify-henshusha-cli-entry.mjs && node scripts/verify-henshusha-init.mjs",
     "test:timeline-schema": "node scripts/verify-timeline-schema.mjs",
     "dev:verify-render": "node scripts/verify-render.mjs",
     "lint": "node scripts/typecheck.mjs",
