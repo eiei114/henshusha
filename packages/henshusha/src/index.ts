@@ -70,7 +70,22 @@ async function workspaceCliDependency(projectRoot: string): Promise<string> {
   return readPackageVersion();
 }
 
-async function updateWorkspacePackageJson(projectRoot: string, workspaceName: string): Promise<void> {
+const henshushaWorkspaceScripts: Record<string, string> = {
+  validate: "henshusha validate projects/sample-video",
+  "render:dry-run": "henshusha render projects/sample-video --dry-run",
+  render: "henshusha render projects/sample-video",
+  "remotion:props": "henshusha remotion-props projects/sample-video",
+  "remotion:preview": "henshusha remotion-props projects/sample-video && remotion preview projects/sample-video/remotion/index.tsx",
+  "remotion:render": "henshusha remotion-props projects/sample-video && remotion render projects/sample-video/remotion/index.tsx HenshushaTimeline projects/sample-video/renders/remotion-output.mp4",
+  "new-project": "henshusha new-project",
+  "doctor:updates": "henshusha doctor --updates"
+};
+
+async function updateWorkspacePackageJson(
+  projectRoot: string,
+  workspaceName: string,
+  options?: { preserveExistingMetadata?: boolean }
+): Promise<void> {
   const packageJsonPath = path.join(projectRoot, "package.json");
   if (!(await exists(packageJsonPath))) return;
   const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8")) as {
@@ -78,18 +93,12 @@ async function updateWorkspacePackageJson(projectRoot: string, workspaceName: st
     scripts?: Record<string, string>;
     devDependencies?: Record<string, string>;
   };
-  packageJson.name = workspaceName;
-  packageJson.scripts = {
-    ...packageJson.scripts,
-    "validate": "henshusha validate projects/sample-video",
-    "render:dry-run": "henshusha render projects/sample-video --dry-run",
-    "render": "henshusha render projects/sample-video",
-    "remotion:props": "henshusha remotion-props projects/sample-video",
-    "remotion:preview": "henshusha remotion-props projects/sample-video && remotion preview projects/sample-video/remotion/index.tsx",
-    "remotion:render": "henshusha remotion-props projects/sample-video && remotion render projects/sample-video/remotion/index.tsx HenshushaTimeline projects/sample-video/renders/remotion-output.mp4",
-    "new-project": "henshusha new-project",
-    "doctor:updates": "henshusha doctor --updates"
-  };
+  if (options?.preserveExistingMetadata) {
+    packageJson.scripts = { ...henshushaWorkspaceScripts, ...packageJson.scripts };
+  } else {
+    packageJson.name = workspaceName;
+    packageJson.scripts = { ...packageJson.scripts, ...henshushaWorkspaceScripts };
+  }
   packageJson.devDependencies = {
     ...packageJson.devDependencies,
     "henshusha": await workspaceCliDependency(projectRoot)
@@ -170,7 +179,7 @@ async function runGitWithOutput(
       stdout += String(chunk);
     });
     child.on("error", () => resolve({ ok: false, command: display, stdout: "" }));
-    child.on("exit", (code) => resolve({ ok: code === 0, command: display, stdout }));
+    child.on("close", (code) => resolve({ ok: code === 0, command: display, stdout }));
   });
 }
 
@@ -673,9 +682,10 @@ async function populateWorkspaceScaffold(
     path.resolve(process.cwd(), "packages/agent-kit/skills")
   ]);
   const skipNames = new Set([".git"]);
+  const hadPackageJson = await exists(path.join(targetDir, "package.json"));
   await copyDirectoryContents(templateSource, targetDir, { skipNames });
   await copySkills(skillsSource, targetDir);
-  await updateWorkspacePackageJson(targetDir, workspaceName);
+  await updateWorkspacePackageJson(targetDir, workspaceName, { preserveExistingMetadata: hadPackageJson });
   const packageManager = detectPackageManager();
   if (!install) return { packageManager };
   const installResult = await installWorkspaceDependencies(targetDir, packageManager);

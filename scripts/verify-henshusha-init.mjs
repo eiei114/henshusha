@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { copyFileSync, existsSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -48,6 +48,15 @@ try {
 
   mkdirSync(existingRepo, { recursive: true });
   writeFileSync(path.join(existingRepo, "README.md"), "# Existing product repo\n", "utf8");
+  const existingPackageJson = {
+    name: "my-existing-product",
+    private: true,
+    scripts: {
+      build: "tsc -p tsconfig.json",
+      test: "node --test"
+    }
+  };
+  writeFileSync(path.join(existingRepo, "package.json"), `${JSON.stringify(existingPackageJson, null, 2)}\n`, "utf8");
   const gitInit = spawnSync("git", ["init", "--initial-branch=main"], {
     cwd: existingRepo,
     encoding: "utf8"
@@ -65,6 +74,14 @@ try {
   );
   assert(!existsSync(path.join(existingRepo, ".git", ".git")), "nested .git must not be created at repo root");
   assert(!existsSync(path.join(existingRepo, "videos", ".git")), "nested .git must not be created under default init target");
+  const rootPackageJson = JSON.parse(readFileSync(path.join(existingRepo, "package.json"), "utf8"));
+  assert(rootPackageJson.name === "my-existing-product", `expected existing package name to be preserved, got ${rootPackageJson.name}`);
+  assert(rootPackageJson.scripts.build === "tsc -p tsconfig.json", "expected existing build script to be preserved");
+  assert(rootPackageJson.scripts.test === "node --test", "expected existing test script to be preserved");
+  assert(
+    typeof rootPackageJson.devDependencies?.henshusha === "string",
+    "expected henshusha devDependency to be added without clobbering package metadata"
+  );
 
   const dirResult = runCli(symlinkPath, ["init", "--dir", "videos", "--no-install"], existingRepo);
   assertCliSuccess(dirResult, "henshusha init --dir videos");
@@ -73,6 +90,17 @@ try {
     "expected scaffold files under videos/"
   );
   assert(!existsSync(path.join(nestedTarget, ".git")), "nested .git must not be created under --dir target");
+  const nestedPackageJsonPath = path.join(nestedTarget, "package.json");
+  assert(existsSync(nestedPackageJsonPath), "expected scaffold package.json under --dir target");
+  const nestedPackageJson = JSON.parse(readFileSync(nestedPackageJsonPath, "utf8"));
+  assert(
+    nestedPackageJson.name === "videos",
+    `expected scaffold package name under --dir target, got ${nestedPackageJson.name}`
+  );
+  assert(
+    nestedPackageJson.scripts?.validate?.includes("henshusha validate"),
+    "expected henshusha scripts on fresh --dir scaffold"
+  );
 
   const standaloneRoot = path.join(tmpRoot, "standalone");
   mkdirSync(standaloneRoot, { recursive: true });
