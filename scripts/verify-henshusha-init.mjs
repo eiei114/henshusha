@@ -102,6 +102,94 @@ try {
     "expected henshusha scripts on fresh --dir scaffold"
   );
 
+  const piOnlyRepo = path.join(tmpRoot, "pi-only-repo");
+  mkdirSync(piOnlyRepo, { recursive: true });
+  writeFileSync(path.join(piOnlyRepo, "package.json"), '{"name":"pi-only"}\n', "utf8");
+  assert(spawnSync("git", ["init", "--initial-branch=main"], { cwd: piOnlyRepo, encoding: "utf8" }).status === 0);
+  const piOnlyResult = runCli(symlinkPath, ["init", "--agents", "pi", "--no-install"], piOnlyRepo);
+  assertCliSuccess(piOnlyResult, "henshusha init --agents pi");
+  assert(
+    existsSync(path.join(piOnlyRepo, ".pi", "skills", "henshusha-render", "SKILL.md")),
+    "expected Pi henshusha skills for --agents pi"
+  );
+  assert(
+    !existsSync(path.join(piOnlyRepo, ".claude", "skills", "henshusha-render", "SKILL.md")),
+    "Claude henshusha skills must be skipped for --agents pi"
+  );
+  assert(
+    !existsSync(path.join(piOnlyRepo, ".codex", "skills", "henshusha-render", "SKILL.md")),
+    "Codex henshusha skills must be skipped for --agents pi"
+  );
+
+  const noSkillsRepo = path.join(tmpRoot, "no-skills-repo");
+  mkdirSync(noSkillsRepo, { recursive: true });
+  writeFileSync(path.join(noSkillsRepo, "package.json"), '{"name":"no-skills"}\n', "utf8");
+  assert(spawnSync("git", ["init", "--initial-branch=main"], { cwd: noSkillsRepo, encoding: "utf8" }).status === 0);
+  const noSkillsResult = runCli(symlinkPath, ["init", "--no-skills", "--no-install"], noSkillsRepo);
+  assertCliSuccess(noSkillsResult, "henshusha init --no-skills");
+  assert(
+    !existsSync(path.join(noSkillsRepo, ".pi", "skills", "henshusha-render", "SKILL.md")),
+    "--no-skills must not install agent skill folders"
+  );
+
+  const nestedAgentsRepo = path.join(tmpRoot, "nested-agents-repo");
+  const nestedContentDir = path.join(nestedAgentsRepo, "content");
+  mkdirSync(nestedAgentsRepo, { recursive: true });
+  writeFileSync(path.join(nestedAgentsRepo, "package.json"), '{"name":"nested-agents"}\n', "utf8");
+  assert(spawnSync("git", ["init", "--initial-branch=main"], { cwd: nestedAgentsRepo, encoding: "utf8" }).status === 0);
+  const nestedAgentsResult = runCli(
+    symlinkPath,
+    ["init", "--dir", "content", "--agents", "pi", "--no-install"],
+    nestedAgentsRepo
+  );
+  assertCliSuccess(nestedAgentsResult, "henshusha init --dir content --agents pi");
+  assert(
+    existsSync(path.join(nestedContentDir, "projects", "sample-video", "timelines", "main.timeline.json")),
+    "expected scaffold files under --dir content"
+  );
+  assert(
+    existsSync(path.join(nestedAgentsRepo, ".pi", "skills", "henshusha-render", "SKILL.md")),
+    "expected Pi skills at Git root for --dir init"
+  );
+  assert(
+    !existsSync(path.join(nestedContentDir, ".pi", "skills", "henshusha-render", "SKILL.md")),
+    "Pi skills must not be installed under deep --dir target"
+  );
+
+  const preserveRepo = path.join(tmpRoot, "preserve-repo");
+  const customSkillDir = path.join(preserveRepo, ".claude", "skills", "custom-other");
+  mkdirSync(customSkillDir, { recursive: true });
+  writeFileSync(path.join(customSkillDir, "SKILL.md"), "# custom\n", "utf8");
+  writeFileSync(path.join(preserveRepo, "package.json"), '{"name":"preserve"}\n', "utf8");
+  assert(spawnSync("git", ["init", "--initial-branch=main"], { cwd: preserveRepo, encoding: "utf8" }).status === 0);
+  const preserveResult = runCli(symlinkPath, ["init", "--agents", "pi", "--no-install"], preserveRepo);
+  assertCliSuccess(preserveResult, "henshusha init preserving unrelated skills");
+  assert(existsSync(path.join(customSkillDir, "SKILL.md")), "unrelated Claude skills must be preserved");
+  assert(
+    existsSync(path.join(preserveRepo, ".pi", "skills", "henshusha-render", "SKILL.md")),
+    "expected Pi henshusha skills while preserving unrelated Claude skills"
+  );
+
+  const allAgentsRepo = path.join(tmpRoot, "all-agents-repo");
+  mkdirSync(allAgentsRepo, { recursive: true });
+  writeFileSync(path.join(allAgentsRepo, "package.json"), '{"name":"all-agents"}\n', "utf8");
+  assert(spawnSync("git", ["init", "--initial-branch=main"], { cwd: allAgentsRepo, encoding: "utf8" }).status === 0);
+  const allAgentsResult = runCli(symlinkPath, ["init", "--all-agents", "--no-install"], allAgentsRepo);
+  assertCliSuccess(allAgentsResult, "henshusha init --all-agents");
+  assert(existsSync(path.join(allAgentsRepo, ".claude", "skills", "henshusha-render", "SKILL.md")), "--all-agents must install Claude skills");
+  assert(existsSync(path.join(allAgentsRepo, ".codex", "skills", "henshusha-render", "SKILL.md")), "--all-agents must install Codex skills");
+  assert(existsSync(path.join(allAgentsRepo, ".pi", "skills", "henshusha-render", "SKILL.md")), "--all-agents must install Pi skills");
+
+  const unknownAgentResult = runCli(symlinkPath, ["init", "--agents", "unknown", "--no-install"], piOnlyRepo);
+  assert(unknownAgentResult.status !== 0, "unknown agent runtime must fail");
+  assert(
+    /Unknown agent runtime/i.test(unknownAgentResult.stderr) || /Unknown agent runtime/i.test(unknownAgentResult.stdout),
+    `expected actionable unknown-agent error, got:\n${unknownAgentResult.stdout}\n${unknownAgentResult.stderr}`
+  );
+
+  const conflictResult = runCli(symlinkPath, ["init", "--agents", "pi", "--no-skills", "--no-install"], piOnlyRepo);
+  assert(conflictResult.status !== 0, "conflicting agent flags must fail");
+
   const standaloneRoot = path.join(tmpRoot, "standalone");
   mkdirSync(standaloneRoot, { recursive: true });
   const occupiedWorkspace = path.join(standaloneRoot, "blocked-name");
