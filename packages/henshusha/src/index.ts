@@ -125,40 +125,160 @@ async function workspaceCliDependency(projectRoot: string): Promise<string> {
   return readPackageVersion();
 }
 
-const henshushaWorkspaceScripts: Record<string, string> = {
-  validate: "henshusha validate projects/sample-video",
-  "render:dry-run": "henshusha render projects/sample-video --dry-run",
-  render: "henshusha render projects/sample-video",
-  "remotion:props": "henshusha remotion-props projects/sample-video",
-  "remotion:preview": "henshusha remotion-props projects/sample-video && remotion preview projects/sample-video/remotion/index.tsx",
-  "remotion:render": "henshusha remotion-props projects/sample-video && remotion render projects/sample-video/remotion/index.tsx HenshushaTimeline projects/sample-video/renders/remotion-output.mp4",
-  "new-project": "henshusha new-project",
-  "doctor:updates": "henshusha doctor --updates"
-};
+const HENSHUSHA_GITIGNORE_BEGIN = "# BEGIN henshusha";
+const HENSHUSHA_GITIGNORE_END = "# END henshusha";
+
+const HENSHUSHA_SCRIPT_KEYS = [
+  "validate",
+  "render:dry-run",
+  "render",
+  "remotion:props",
+  "remotion:preview",
+  "remotion:render",
+  "new-project",
+  "doctor:updates"
+] as const;
+
+function pathPrefixFromTo(fromDir: string, toDir: string): string {
+  const relative = normalizePathForPackageJson(path.relative(fromDir, toDir));
+  if (!relative || relative === ".") return "";
+  return `${relative}/`;
+}
+
+function workspaceProjectPath(workspaceRoot: string, scriptRoot = workspaceRoot): string {
+  const projectDir = path.join(workspaceRoot, "projects", "sample-video");
+  const relative = normalizePathForPackageJson(path.relative(scriptRoot, projectDir));
+  return relative || "projects/sample-video";
+}
+
+function henshushaWorkspaceScripts(projectPath: string): Record<string, string> {
+  return {
+    validate: `henshusha validate ${projectPath}`,
+    "render:dry-run": `henshusha render ${projectPath} --dry-run`,
+    render: `henshusha render ${projectPath}`,
+    "remotion:props": `henshusha remotion-props ${projectPath}`,
+    "remotion:preview": `henshusha remotion-props ${projectPath} && remotion preview ${projectPath}/remotion/index.tsx`,
+    "remotion:render": `henshusha remotion-props ${projectPath} && remotion render ${projectPath}/remotion/index.tsx HenshushaTimeline ${projectPath}/renders/remotion-output.mp4`,
+    "new-project": "henshusha new-project",
+    "doctor:updates": "henshusha doctor --updates"
+  };
+}
+
+function henshushaGitignoreBlockLines(pathPrefix: string): string[] {
+  const prefix = (line: string) => (line.startsWith("!") ? `!${pathPrefix}${line.slice(1)}` : `${pathPrefix}${line}`);
+  return [
+    "# Henshusha generated outputs",
+    prefix("projects/*/sources/raw/*"),
+    prefix("!projects/*/sources/raw/.gitkeep"),
+    prefix("projects/*/renders/*.mp4"),
+    prefix("projects/*/renders/*.mov"),
+    prefix("projects/*/renders/*.webm"),
+    prefix("projects/*/jobs/*.json"),
+    prefix("projects/*/remotion/timeline-props.json"),
+    "",
+    "# Keep directory placeholders",
+    prefix("!projects/*/renders/.gitkeep"),
+    prefix("!projects/*/jobs/.gitkeep")
+  ];
+}
+
+function mergeHenshushaGitignoreBlock(existing: string, blockBody: string): string {
+  const block = `${HENSHUSHA_GITIGNORE_BEGIN}\n${blockBody.trimEnd()}\n${HENSHUSHA_GITIGNORE_END}`;
+  const beginIndex = existing.indexOf(HENSHUSHA_GITIGNORE_BEGIN);
+  const endIndex = existing.indexOf(HENSHUSHA_GITIGNORE_END);
+  if (beginIndex !== -1 && endIndex !== -1 && endIndex > beginIndex) {
+    const before = existing.slice(0, beginIndex).replace(/\n?$/, "");
+    const after = existing.slice(endIndex + HENSHUSHA_GITIGNORE_END.length).replace(/^\n?/, "");
+    const parts = [before, block, after].filter((part) => part.length > 0);
+    return `${parts.join("\n")}\n`;
+  }
+  const trimmed = existing.replace(/\n?$/, "");
+  if (!trimmed) return `${block}\n`;
+  return `${trimmed}\n\n${block}\n`;
+}
+
+function mergeHenshushaScripts(
+  existingScripts: Record<string, string> | undefined,
+  desiredScripts: Record<string, string>,
+  force: boolean
+): Record<string, string> {
+  const merged = { ...(existingScripts ?? {}) };
+  for (const key of HENSHUSHA_SCRIPT_KEYS) {
+    const desired = desiredScripts[key];
+    if (!desired) continue;
+    if (!(key in merged)) {
+      merged[key] = desired;
+      continue;
+    }
+    if (merged[key] === desired) continue;
+    if (force) merged[key] = desired;
+    else console.warn(`Warning: kept existing script "${key}"; use --force to overwrite with Henshusha default`);
+  }
+  return merged;
+}
 
 async function updateWorkspacePackageJson(
   projectRoot: string,
   workspaceName: string,
-  options?: { preserveExistingMetadata?: boolean }
+  options?: {
+    preserveExistingMetadata?: boolean;
+    force?: boolean;
+    workspaceRoot?: string;
+    mergeMode?: boolean;
+  }
 ): Promise<void> {
   const packageJsonPath = path.join(projectRoot, "package.json");
   if (!(await exists(packageJsonPath))) return;
   const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8")) as {
     name?: string;
+    version?: string;
+    type?: string;
     scripts?: Record<string, string>;
+    dependencies?: Record<string, string>;
     devDependencies?: Record<string, string>;
   };
-  if (options?.preserveExistingMetadata) {
-    packageJson.scripts = { ...henshushaWorkspaceScripts, ...packageJson.scripts };
+  const workspaceRoot = options?.workspaceRoot ?? projectRoot;
+  const projectPath = workspaceProjectPath(workspaceRoot, projectRoot);
+  const desiredScripts = henshushaWorkspaceScripts(projectPath);
+  if (options?.mergeMode && options.preserveExistingMetadata) {
+    packageJson.scripts = mergeHenshushaScripts(packageJson.scripts, desiredScripts, options.force ?? false);
+    if (!packageJson.devDependencies?.henshusha) {
+      packageJson.devDependencies = {
+        ...packageJson.devDependencies,
+        henshusha: await workspaceCliDependency(projectRoot)
+      };
+    }
+  } else if (options?.preserveExistingMetadata) {
+    packageJson.scripts = mergeHenshushaScripts(packageJson.scripts, desiredScripts, false);
+    if (!packageJson.devDependencies?.henshusha) {
+      packageJson.devDependencies = {
+        ...packageJson.devDependencies,
+        henshusha: await workspaceCliDependency(projectRoot)
+      };
+    }
   } else {
     packageJson.name = workspaceName;
-    packageJson.scripts = { ...packageJson.scripts, ...henshushaWorkspaceScripts };
+    packageJson.scripts = { ...packageJson.scripts, ...desiredScripts };
+    packageJson.devDependencies = {
+      ...packageJson.devDependencies,
+      henshusha: await workspaceCliDependency(projectRoot)
+    };
   }
-  packageJson.devDependencies = {
-    ...packageJson.devDependencies,
-    "henshusha": await workspaceCliDependency(projectRoot)
-  };
   await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8");
+}
+
+async function mergeEmbeddedWorkspaceGitignore(
+  workspaceRoot: string,
+  options?: { gitRoot?: string }
+): Promise<void> {
+  const gitignoreDir = options?.gitRoot ?? workspaceRoot;
+  const gitignorePath = path.join(gitignoreDir, ".gitignore");
+  const pathPrefix = pathPrefixFromTo(gitignoreDir, workspaceRoot);
+  const blockBody = henshushaGitignoreBlockLines(pathPrefix).join("\n");
+  const existing = (await exists(gitignorePath)) ? await readFile(gitignorePath, "utf8") : "";
+  const merged = mergeHenshushaGitignoreBlock(existing, blockBody);
+  if (merged === existing) return;
+  await writeFile(gitignorePath, merged, "utf8");
 }
 
 type PackageManager = "npm" | "pnpm" | "bun" | "yarn";
@@ -714,11 +834,12 @@ function parseScaffoldArgs(argv: string[]): { workspaceName: string; targetDir: 
   return { workspaceName, targetDir: path.resolve(process.cwd(), workspaceName), install, git, agentSelection };
 }
 
-function parseInitArgs(argv: string[]): { targetDir: string; install: boolean; agentSelection: AgentSelection } {
+function parseInitArgs(argv: string[]): { targetDir: string; install: boolean; force: boolean; agentSelection: AgentSelection } {
   const install = !argv.includes("--no-install");
+  const force = argv.includes("--force");
   const dir = parseOption(argv, "--dir");
   const agentSelection = resolveAgentSelection(argv);
-  const initFlags = new Set(["--no-install", "--install", "--dir", "--no-skills", "--all-agents", "--agents"]);
+  const initFlags = new Set(["--no-install", "--install", "--dir", "--force", "--no-skills", "--all-agents", "--agents"]);
   const positional = argv.filter((value, index) => {
     if (initFlags.has(value)) return false;
     if (index > 0 && argv[index - 1] === "--dir") return false;
@@ -726,9 +847,9 @@ function parseInitArgs(argv: string[]): { targetDir: string; install: boolean; a
     return true;
   });
   if (positional.length > 0) {
-    throw new Error("Usage: henshusha init [--dir <path>] [--no-install] [--agents <runtimes>] [--all-agents] [--no-skills]");
+    throw new Error("Usage: henshusha init [--dir <path>] [--no-install] [--force] [--agents <runtimes>] [--all-agents] [--no-skills]");
   }
-  return { targetDir: path.resolve(process.cwd(), dir ?? "."), install, agentSelection };
+  return { targetDir: path.resolve(process.cwd(), dir ?? "."), install, force, agentSelection };
 }
 
 function embeddedWorkspaceName(targetDir: string): string {
@@ -741,7 +862,13 @@ async function populateWorkspaceScaffold(
   targetDir: string,
   workspaceName: string,
   install: boolean,
-  options: { skillsRoot: string; agentSelection: AgentSelection }
+  options: {
+    skillsRoot: string;
+    agentSelection: AgentSelection;
+    embedded?: boolean;
+    force?: boolean;
+    gitRoot?: string;
+  }
 ): Promise<{ packageManager: PackageManager; installResult?: { ok: boolean; command: string } }> {
   const templateSource = await findFirstExisting([
     path.join(packageRoot, "templates", "basic"),
@@ -752,10 +879,19 @@ async function populateWorkspaceScaffold(
     path.resolve(process.cwd(), "packages/agent-kit/skills")
   ]);
   const skipNames = new Set([".git"]);
+  if (options.embedded) skipNames.add(".gitignore");
   const hadPackageJson = await exists(path.join(targetDir, "package.json"));
   await copyDirectoryContents(templateSource, targetDir, { skipNames });
   await copySkills(skillsSource, options.skillsRoot, options.agentSelection);
-  await updateWorkspacePackageJson(targetDir, workspaceName, { preserveExistingMetadata: hadPackageJson });
+  await updateWorkspacePackageJson(targetDir, workspaceName, {
+    preserveExistingMetadata: hadPackageJson,
+    ...(options.force !== undefined ? { force: options.force } : {}),
+    workspaceRoot: targetDir,
+    ...(options.embedded ? { mergeMode: true } : {})
+  });
+  if (options.embedded) {
+    await mergeEmbeddedWorkspaceGitignore(targetDir, options.gitRoot ? { gitRoot: options.gitRoot } : {});
+  }
   const packageManager = detectPackageManager();
   if (!install) return { packageManager };
   const installResult = await installWorkspaceDependencies(targetDir, packageManager);
@@ -788,19 +924,29 @@ export async function createHenshushaWorkspace(argv = process.argv.slice(2)): Pr
 }
 
 export async function initEmbeddedWorkspace(argv = process.argv.slice(2)): Promise<void> {
-  const { targetDir, install, agentSelection } = parseInitArgs(argv);
+  const { targetDir, install, force, agentSelection } = parseInitArgs(argv);
   const gitRoot = await findGitRoot(process.cwd());
-  if (gitRoot) console.log(`Detected Git repository root: ${gitRoot}`);
-  const skillsRoot = gitRoot ?? process.cwd();
+  const relativeTarget = gitRoot ? path.relative(gitRoot, targetDir) : "";
+  const targetIsInGitRoot =
+    Boolean(gitRoot) &&
+    relativeTarget !== ".." &&
+    !relativeTarget.startsWith(`..${path.sep}`) &&
+    !path.isAbsolute(relativeTarget);
+  const effectiveGitRoot = targetIsInGitRoot ? gitRoot : undefined;
+  if (effectiveGitRoot) console.log(`Detected Git repository root: ${effectiveGitRoot}`);
+  const skillsRoot = effectiveGitRoot ?? process.cwd();
   const workspaceName = embeddedWorkspaceName(targetDir);
   const { packageManager, installResult } = await populateWorkspaceScaffold(targetDir, workspaceName, install, {
     skillsRoot,
-    agentSelection
+    agentSelection,
+    embedded: true,
+    force,
+    ...(effectiveGitRoot ? { gitRoot: effectiveGitRoot } : {})
   });
   console.log(`Initialized Henshusha workspace at ${targetDir}`);
   if (!install) console.log("Skipped dependency install. Run npm install, pnpm install, or bun install inside the workspace.");
   else if (!installResult?.ok) console.log(`Workspace initialized, but dependency install failed. Run ${installResult?.command ?? "npm install"} inside the workspace.`);
-  if (gitRoot) console.log("Skipped git init (embedded init never creates a nested repository inside an existing Git worktree).");
+  if (effectiveGitRoot) console.log("Skipped git init (embedded init never creates a nested repository inside an existing Git worktree).");
   else console.log("Skipped git init (embedded init does not initialize Git repositories).");
   const targetLabel = path.relative(process.cwd(), targetDir) || ".";
   printWorkspaceNextSteps(targetLabel, packageManager);
@@ -816,7 +962,7 @@ export async function runCli(argv = process.argv.slice(2)): Promise<void> {
   if (command === "init") return initEmbeddedWorkspace(rest);
   if (command === "help" || command === "--help" || command === "-h") {
     console.log(
-      "Usage: henshusha [workspace-name] [--no-install] [--no-git] [--agents <runtimes>] [--all-agents] [--no-skills] | init [--dir <path>] [--no-install] [--agents <runtimes>] [--all-agents] [--no-skills] | validate [project-dir] | render [project-dir] [--dry-run] [--plan-output <path>] | remotion-props [project-dir] [--output <path>] [--fps <number>] | new-project <name> | doctor [--updates]"
+      "Usage: henshusha [workspace-name] [--no-install] [--no-git] [--agents <runtimes>] [--all-agents] [--no-skills] | init [--dir <path>] [--no-install] [--force] [--agents <runtimes>] [--all-agents] [--no-skills] | validate [project-dir] | render [project-dir] [--dry-run] [--plan-output <path>] | remotion-props [project-dir] [--output <path>] [--fps <number>] | new-project <name> | doctor [--updates]"
     );
     return;
   }
