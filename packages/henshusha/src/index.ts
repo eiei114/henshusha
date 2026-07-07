@@ -47,9 +47,10 @@ async function findFirstExisting(candidates: string[]): Promise<string> {
 async function copyDirectoryContents(
   source: string,
   destination: string,
-  options?: { skipNames?: ReadonlySet<string> }
+  options?: { skipNames?: ReadonlySet<string>; force?: boolean }
 ): Promise<void> {
   const skipNames = options?.skipNames ?? new Set<string>();
+  const force = options?.force ?? false;
   await mkdir(destination, { recursive: true });
   for (const entry of await readdir(source)) {
     if (skipNames.has(entry)) continue;
@@ -57,7 +58,7 @@ async function copyDirectoryContents(
     const destinationPath = path.join(destination, entry);
     const info = await stat(sourcePath);
     if (info.isDirectory()) await copyDirectoryContents(sourcePath, destinationPath, options);
-    else await cp(sourcePath, destinationPath, { force: false, errorOnExist: false });
+    else await cp(sourcePath, destinationPath, { force, errorOnExist: false });
   }
 }
 
@@ -168,6 +169,7 @@ async function copyHenshushaSkills(
     if (!desiredHash) continue;
     const targetPath = path.join(runtimeSkillsDir, entry);
     const relativePath = normalizePathForPackageJson(path.relative(skillsRoot, targetPath));
+    let overwrite = false;
     if (await exists(path.join(targetPath, "SKILL.md"))) {
       const existingHash = await hashSkillDirectory(targetPath);
       if (existingHash === desiredHash) {
@@ -175,8 +177,9 @@ async function copyHenshushaSkills(
         continue;
       }
       if (existingHash && existingHash !== desiredHash && !force) continue;
+      if (existingHash && existingHash !== desiredHash && force) overwrite = true;
     }
-    await copyDirectoryContents(sourcePath, targetPath);
+    await copyDirectoryContents(sourcePath, targetPath, { force: overwrite });
     installed.push({ agent, skill: entry, relativePath, hash: desiredHash });
   }
   return installed;

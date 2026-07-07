@@ -297,8 +297,77 @@ try {
   assert(existsSync(manifestPath), "expected .henshusha/manifest.json after init");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   assert(manifest.mode === "embedded", `expected embedded manifest mode, got ${manifest.mode}`);
+  assert(manifest.schemaVersion === 1, "manifest must record schema version");
+  assert(typeof manifest.henshushaVersion === "string" && manifest.henshushaVersion.length > 0, "manifest must record henshusha version");
+  assert(typeof manifest.contentRoot === "string" && manifest.contentRoot.length > 0, "manifest must record content root");
+  assert(typeof manifest.gitRoot === "string" && manifest.gitRoot.length > 0, "manifest must record git root");
   assert(Array.isArray(manifest.selectedAgents) && manifest.selectedAgents.includes("pi"), "manifest must record selected agents");
   assert(Array.isArray(manifest.skills) && manifest.skills.length > 0, "manifest must record installed skills");
+  assert(
+    manifest.skills.every((record) => typeof record.hash === "string" && record.hash.startsWith("sha256:")),
+    "manifest skill records must include hashes"
+  );
+
+  const manifestRerun = runCli(symlinkPath, ["init", "--no-install"], manifestRepo);
+  assertCliSuccess(manifestRerun, "henshusha init manifest rerun");
+  assert(
+    !existsSync(path.join(manifestRepo, ".claude", "skills", "henshusha-render", "SKILL.md")),
+    "manifest rerun must not install deselected Claude skills in non-TTY mode"
+  );
+  assert(
+    existsSync(path.join(manifestRepo, ".pi", "skills", "henshusha-render", "SKILL.md")),
+    "manifest rerun must keep Pi skills selected from manifest"
+  );
+
+  const idempotentRerun = runCli(symlinkPath, ["init", "--agents", "pi", "--no-install"], manifestRepo);
+  assertCliSuccess(idempotentRerun, "henshusha init idempotent rerun with matching skills");
+
+  const nonTtyDefaultRepo = path.join(tmpRoot, "non-tty-default-repo");
+  mkdirSync(nonTtyDefaultRepo, { recursive: true });
+  writeFileSync(path.join(nonTtyDefaultRepo, "package.json"), '{"name":"non-tty-default"}\n', "utf8");
+  assert(spawnSync("git", ["init", "--initial-branch=main"], { cwd: nonTtyDefaultRepo, encoding: "utf8" }).status === 0);
+  const nonTtyDefaultResult = runCli(symlinkPath, ["init", "--no-install"], nonTtyDefaultRepo);
+  assertCliSuccess(nonTtyDefaultResult, "henshusha init non-TTY default agents");
+  assert(existsSync(path.join(nonTtyDefaultRepo, ".claude", "skills", "henshusha-render", "SKILL.md")), "non-TTY init must install Claude skills by default");
+  assert(existsSync(path.join(nonTtyDefaultRepo, ".codex", "skills", "henshusha-render", "SKILL.md")), "non-TTY init must install Codex skills by default");
+  assert(existsSync(path.join(nonTtyDefaultRepo, ".pi", "skills", "henshusha-render", "SKILL.md")), "non-TTY init must install Pi skills by default");
+
+  const deselectRepo = path.join(tmpRoot, "deselect-repo");
+  mkdirSync(deselectRepo, { recursive: true });
+  writeFileSync(path.join(deselectRepo, "package.json"), '{"name":"deselect"}\n', "utf8");
+  assert(spawnSync("git", ["init", "--initial-branch=main"], { cwd: deselectRepo, encoding: "utf8" }).status === 0);
+  const deselectAll = runCli(symlinkPath, ["init", "--all-agents", "--no-install"], deselectRepo);
+  assertCliSuccess(deselectAll, "henshusha init --all-agents for deselect test");
+  const deselectSubset = runCli(symlinkPath, ["init", "--agents", "claude,codex", "--no-install"], deselectRepo);
+  assertCliSuccess(deselectSubset, "henshusha init deselect subset");
+  assert(
+    existsSync(path.join(deselectRepo, ".pi", "skills", "henshusha-render", "SKILL.md")),
+    "deselected Pi skills must remain on disk"
+  );
+  const deselectManifest = JSON.parse(readFileSync(path.join(deselectRepo, ".henshusha", "manifest.json"), "utf8"));
+  assert(
+    deselectManifest.selectedAgents.includes("claude") && deselectManifest.selectedAgents.includes("codex") && !deselectManifest.selectedAgents.includes("pi"),
+    "manifest must record deselected agents"
+  );
+
+  const collisionRepo = path.join(tmpRoot, "collision-repo");
+  const collisionSkillDir = path.join(collisionRepo, ".pi", "skills", "henshusha-render");
+  mkdirSync(collisionSkillDir, { recursive: true });
+  writeFileSync(path.join(collisionRepo, "package.json"), '{"name":"collision"}\n', "utf8");
+  writeFileSync(path.join(collisionSkillDir, "SKILL.md"), "# conflicting skill content\n", "utf8");
+  assert(spawnSync("git", ["init", "--initial-branch=main"], { cwd: collisionRepo, encoding: "utf8" }).status === 0);
+  const collisionResult = runCli(symlinkPath, ["init", "--agents", "pi", "--no-install"], collisionRepo);
+  assert(collisionResult.status !== 0, "skill collision must fail without --force");
+  assert(
+    /skill collision detected/i.test(collisionResult.stderr) || /skill collision detected/i.test(collisionResult.stdout),
+    `expected skill collision report, got:\n${collisionResult.stdout}\n${collisionResult.stderr}`
+  );
+  const collisionForce = runCli(symlinkPath, ["init", "--agents", "pi", "--no-install", "--force"], collisionRepo);
+  assertCliSuccess(collisionForce, "henshusha init --force on skill collision");
+  assert(
+    readFileSync(path.join(collisionSkillDir, "SKILL.md"), "utf8").includes("Validate a Henshusha manual Timeline JSON"),
+    "--force must overwrite colliding Henshusha skill files"
+  );
 
   const renderDryRun = runCli(
     symlinkPath,
