@@ -258,6 +258,59 @@ try {
     `expected non-empty rejection, got:\n${standaloneResult.stdout}\n${standaloneResult.stderr}`
   );
 
+  const dryRunRepo = path.join(tmpRoot, "dry-run-repo");
+  mkdirSync(dryRunRepo, { recursive: true });
+  writeFileSync(path.join(dryRunRepo, "package.json"), '{"name":"dry-run"}\n', "utf8");
+  assert(spawnSync("git", ["init", "--initial-branch=main"], { cwd: dryRunRepo, encoding: "utf8" }).status === 0);
+  const beforeDryRun = spawnSync(process.execPath, ["--input-type=module", "-e", `
+    import { readdirSync } from 'node:fs';
+    import path from 'node:path';
+    const root = ${JSON.stringify(dryRunRepo)};
+    const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const full = path.join(dir, entry.name);
+      return entry.isDirectory() ? walk(full) : [full];
+    });
+    console.log(JSON.stringify(walk(root).sort()));
+  `], { encoding: "utf8" }).stdout.trim();
+  const dryRunResult = runCli(symlinkPath, ["init", "--dry-run", "--all-agents", "--no-install"], dryRunRepo);
+  assertCliSuccess(dryRunResult, "henshusha init --dry-run");
+  assert(dryRunResult.stdout.includes("Dry run: no files will be written"), `expected dry-run banner, got:\n${dryRunResult.stdout}`);
+  const afterDryRun = spawnSync(process.execPath, ["--input-type=module", "-e", `
+    import { readdirSync } from 'node:fs';
+    import path from 'node:path';
+    const root = ${JSON.stringify(dryRunRepo)};
+    const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const full = path.join(dir, entry.name);
+      return entry.isDirectory() ? walk(full) : [full];
+    });
+    console.log(JSON.stringify(walk(root).sort()));
+  `], { encoding: "utf8" }).stdout.trim();
+  assert(afterDryRun === beforeDryRun, "--dry-run must not write files");
+
+  const manifestRepo = path.join(tmpRoot, "manifest-repo");
+  mkdirSync(manifestRepo, { recursive: true });
+  writeFileSync(path.join(manifestRepo, "package.json"), '{"name":"manifest"}\n', "utf8");
+  assert(spawnSync("git", ["init", "--initial-branch=main"], { cwd: manifestRepo, encoding: "utf8" }).status === 0);
+  const manifestInit = runCli(symlinkPath, ["init", "--agents", "pi", "--no-install"], manifestRepo);
+  assertCliSuccess(manifestInit, "henshusha init manifest");
+  const manifestPath = path.join(manifestRepo, ".henshusha", "manifest.json");
+  assert(existsSync(manifestPath), "expected .henshusha/manifest.json after init");
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  assert(manifest.mode === "embedded", `expected embedded manifest mode, got ${manifest.mode}`);
+  assert(Array.isArray(manifest.selectedAgents) && manifest.selectedAgents.includes("pi"), "manifest must record selected agents");
+  assert(Array.isArray(manifest.skills) && manifest.skills.length > 0, "manifest must record installed skills");
+
+  const renderDryRun = runCli(
+    symlinkPath,
+    ["render", "projects/sample-video", "--dry-run"],
+    existingRepo
+  );
+  assertCliSuccess(renderDryRun, "henshusha render --dry-run after embedded init");
+  assert(
+    existsSync(path.join(existingRepo, "projects", "sample-video", "jobs", "render-plan.json")),
+    "render --dry-run must write render-plan.json after embedded init"
+  );
+
   console.log(`Verified henshusha embedded init via ${entryMode}.`);
 } finally {
   rmSync(tmpRoot, { recursive: true, force: true });

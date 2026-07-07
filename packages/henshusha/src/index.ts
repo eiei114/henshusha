@@ -5,6 +5,18 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatValidationReport, parseResolution, validateTimeline } from "../../timeline/dist/index.js";
+import { isInteractiveTerminal, promptAgentCheckboxSelection } from "./agent-prompt.js";
+import {
+  formatSkillCollisions,
+  hashSkillDirectory,
+  MANIFEST_RELATIVE_PATH,
+  readInstallManifest,
+  type AgentRuntime,
+  type InstallManifest,
+  type ManifestSkillRecord,
+  type SkillCollision,
+  writeInstallManifest
+} from "./manifest.js";
 
 const currentFile = fileURLToPath(import.meta.url);
 const currentDir = path.dirname(currentFile);
@@ -49,8 +61,6 @@ async function copyDirectoryContents(
   }
 }
 
-type AgentRuntime = "claude" | "codex" | "pi";
-
 const AGENT_SKILL_DIRS: Record<AgentRuntime, string> = {
   claude: ".claude/skills",
   codex: ".codex/skills",
@@ -94,21 +104,97 @@ function selectedAgentRuntimes(selection: AgentSelection): AgentRuntime[] {
   return selection.agents;
 }
 
-async function copyHenshushaSkills(skillsSource: string, runtimeSkillsDir: string): Promise<void> {
+function hasExplicitAgentFlags(argv: string[]): boolean {
+  return argv.includes("--no-skills") || argv.includes("--all-agents") || parseOption(argv, "--agents") !== undefined;
+}
+
+async function resolveInitAgentSelection(
+  argv: string[],
+  skillsRoot: string,
+  options?: { dryRun?: boolean }
+): Promise<AgentSelection> {
+  if (hasExplicitAgentFlags(argv)) return resolveAgentSelection(argv);
+  const manifest = await readInstallManifest(skillsRoot);
+  const defaults = manifest?.selectedAgents?.length ? manifest.selectedAgents : ALL_AGENT_RUNTIMES;
+  if (!options?.dryRun && isInteractiveTerminal()) {
+    const selected = await promptAgentCheckboxSelection(defaults);
+    return { mode: "selected", agents: selected };
+  }
+  if (manifest?.selectedAgents?.length) return { mode: "selected", agents: manifest.selectedAgents };
+  return { mode: "all" };
+}
+
+async function detectSkillCollisions(
+  skillsSource: string,
+  skillsRoot: string,
+  selection: AgentSelection
+): Promise<SkillCollision[]> {
+  const collisions: SkillCollision[] = [];
+  for (const agent of selectedAgentRuntimes(selection)) {
+    const runtimeSkillsDir = path.join(skillsRoot, AGENT_SKILL_DIRS[agent]);
+    for (const entry of await readdir(skillsSource)) {
+      if (!entry.startsWith("henshusha-")) continue;
+      const sourcePath = path.join(skillsSource, entry);
+      const info = await stat(sourcePath);
+      if (!info.isDirectory()) continue;
+      const desiredHash = await hashSkillDirectory(sourcePath);
+      if (!desiredHash) continue;
+      const targetPath = path.join(runtimeSkillsDir, entry);
+      if (!(await exists(path.join(targetPath, "SKILL.md")))) continue;
+      const existingHash = await hashSkillDirectory(targetPath);
+      if (existingHash && existingHash !== desiredHash) {
+        collisions.push({ agent, skill: entry, targetPath, existingHash, desiredHash });
+      }
+    }
+  }
+  return collisions;
+}
+
+async function copyHenshushaSkills(
+  skillsSource: string,
+  runtimeSkillsDir: string,
+  agent: AgentRuntime,
+  skillsRoot: string,
+  force: boolean
+): Promise<ManifestSkillRecord[]> {
+  const installed: ManifestSkillRecord[] = [];
   await mkdir(runtimeSkillsDir, { recursive: true });
   for (const entry of await readdir(skillsSource)) {
     if (!entry.startsWith("henshusha-")) continue;
     const sourcePath = path.join(skillsSource, entry);
     const info = await stat(sourcePath);
     if (!info.isDirectory()) continue;
-    await copyDirectoryContents(sourcePath, path.join(runtimeSkillsDir, entry));
+    const desiredHash = await hashSkillDirectory(sourcePath);
+    if (!desiredHash) continue;
+    const targetPath = path.join(runtimeSkillsDir, entry);
+    const relativePath = normalizePathForPackageJson(path.relative(skillsRoot, targetPath));
+    if (await exists(path.join(targetPath, "SKILL.md"))) {
+      const existingHash = await hashSkillDirectory(targetPath);
+      if (existingHash === desiredHash) {
+        installed.push({ agent, skill: entry, relativePath, hash: desiredHash });
+        continue;
+      }
+      if (existingHash && existingHash !== desiredHash && !force) continue;
+    }
+    await copyDirectoryContents(sourcePath, targetPath);
+    installed.push({ agent, skill: entry, relativePath, hash: desiredHash });
   }
+  return installed;
 }
 
-async function copySkills(skillsSource: string, skillsRoot: string, selection: AgentSelection): Promise<void> {
+async function copySkills(
+  skillsSource: string,
+  skillsRoot: string,
+  selection: AgentSelection,
+  force: boolean
+): Promise<ManifestSkillRecord[]> {
+  const installed: ManifestSkillRecord[] = [];
   for (const agent of selectedAgentRuntimes(selection)) {
-    await copyHenshushaSkills(skillsSource, path.join(skillsRoot, AGENT_SKILL_DIRS[agent]));
+    installed.push(
+      ...(await copyHenshushaSkills(skillsSource, path.join(skillsRoot, AGENT_SKILL_DIRS[agent]), agent, skillsRoot, force))
+    );
   }
+  return installed;
 }
 
 function normalizePathForPackageJson(target: string): string {
@@ -834,12 +920,12 @@ function parseScaffoldArgs(argv: string[]): { workspaceName: string; targetDir: 
   return { workspaceName, targetDir: path.resolve(process.cwd(), workspaceName), install, git, agentSelection };
 }
 
-function parseInitArgs(argv: string[]): { targetDir: string; install: boolean; force: boolean; agentSelection: AgentSelection } {
+function parseInitArgs(argv: string[]): { targetDir: string; install: boolean; force: boolean; dryRun: boolean } {
   const install = !argv.includes("--no-install");
   const force = argv.includes("--force");
+  const dryRun = argv.includes("--dry-run");
   const dir = parseOption(argv, "--dir");
-  const agentSelection = resolveAgentSelection(argv);
-  const initFlags = new Set(["--no-install", "--install", "--dir", "--force", "--no-skills", "--all-agents", "--agents"]);
+  const initFlags = new Set(["--no-install", "--install", "--dir", "--force", "--dry-run", "--no-skills", "--all-agents", "--agents"]);
   const positional = argv.filter((value, index) => {
     if (initFlags.has(value)) return false;
     if (index > 0 && argv[index - 1] === "--dir") return false;
@@ -847,9 +933,9 @@ function parseInitArgs(argv: string[]): { targetDir: string; install: boolean; f
     return true;
   });
   if (positional.length > 0) {
-    throw new Error("Usage: henshusha init [--dir <path>] [--no-install] [--force] [--agents <runtimes>] [--all-agents] [--no-skills]");
+    throw new Error("Usage: henshusha init [--dir <path>] [--no-install] [--force] [--dry-run] [--agents <runtimes>] [--all-agents] [--no-skills]");
   }
-  return { targetDir: path.resolve(process.cwd(), dir ?? "."), install, force, agentSelection };
+  return { targetDir: path.resolve(process.cwd(), dir ?? "."), install, force, dryRun };
 }
 
 function embeddedWorkspaceName(targetDir: string): string {
@@ -865,11 +951,13 @@ async function populateWorkspaceScaffold(
   options: {
     skillsRoot: string;
     agentSelection: AgentSelection;
+    mode: InstallManifest["mode"];
     embedded?: boolean;
     force?: boolean;
     gitRoot?: string;
+    dryRun?: boolean;
   }
-): Promise<{ packageManager: PackageManager; installResult?: { ok: boolean; command: string } }> {
+): Promise<{ packageManager: PackageManager; installResult?: { ok: boolean; command: string }; installedSkills: ManifestSkillRecord[] }> {
   const templateSource = await findFirstExisting([
     path.join(packageRoot, "templates", "basic"),
     path.resolve(process.cwd(), "packages/henshusha/templates/basic")
@@ -878,11 +966,16 @@ async function populateWorkspaceScaffold(
     path.join(packageRoot, "skills"),
     path.resolve(process.cwd(), "packages/agent-kit/skills")
   ]);
+  const force = options.force ?? false;
+  const collisions = await detectSkillCollisions(skillsSource, options.skillsRoot, options.agentSelection);
+  if (collisions.length > 0 && !force) throw new Error(formatSkillCollisions(collisions));
+  const packageManager = detectPackageManager();
+  if (options.dryRun) return { packageManager, installedSkills: [] };
   const skipNames = new Set([".git"]);
   if (options.embedded) skipNames.add(".gitignore");
   const hadPackageJson = await exists(path.join(targetDir, "package.json"));
   await copyDirectoryContents(templateSource, targetDir, { skipNames });
-  await copySkills(skillsSource, options.skillsRoot, options.agentSelection);
+  const installedSkills = await copySkills(skillsSource, options.skillsRoot, options.agentSelection, force);
   await updateWorkspacePackageJson(targetDir, workspaceName, {
     preserveExistingMetadata: hadPackageJson,
     ...(options.force !== undefined ? { force: options.force } : {}),
@@ -892,10 +985,68 @@ async function populateWorkspaceScaffold(
   if (options.embedded) {
     await mergeEmbeddedWorkspaceGitignore(targetDir, options.gitRoot ? { gitRoot: options.gitRoot } : {});
   }
-  const packageManager = detectPackageManager();
-  if (!install) return { packageManager };
+  if (!install) return { packageManager, installedSkills };
   const installResult = await installWorkspaceDependencies(targetDir, packageManager);
-  return { packageManager, installResult };
+  return { packageManager, installResult, installedSkills };
+}
+
+async function writeWorkspaceManifest(
+  skillsRoot: string,
+  manifest: Omit<InstallManifest, "schemaVersion" | "henshushaVersion" | "skills"> & { skills: ManifestSkillRecord[] }
+): Promise<void> {
+  await writeInstallManifest(skillsRoot, {
+    schemaVersion: 1,
+    henshushaVersion: await readPackageVersion(),
+    ...manifest
+  });
+}
+
+function printInitDryRunPlan(options: {
+  targetDir: string;
+  skillsRoot: string;
+  gitRoot?: string;
+  agentSelection: AgentSelection;
+  install: boolean;
+  force: boolean;
+  embedded: boolean;
+}): void {
+  console.log("Dry run: no files will be written.");
+  console.log(`Would initialize Henshusha workspace at ${options.targetDir}`);
+  if (options.gitRoot) console.log(`Detected Git repository root: ${options.gitRoot}`);
+  console.log(`Would install agent skills under ${options.skillsRoot}`);
+  const agents = selectedAgentRuntimes(options.agentSelection);
+  console.log(`Selected agents: ${agents.length > 0 ? agents.join(", ") : "(none)"}`);
+  console.log(`Would merge package.json scripts and ${MANIFEST_RELATIVE_PATH}`);
+  if (options.embedded) console.log("Would update managed .gitignore block at Git root.");
+  if (options.force) console.log("Would overwrite conflicting Henshusha scripts and skill files.");
+  if (options.install) console.log("Would install workspace dependencies.");
+  else console.log("Would skip dependency install (--no-install).");
+}
+
+function printCliHelp(): void {
+  console.log(`Henshusha — agent-native video editing workspace CLI
+
+Standalone mode (new empty directory):
+  henshusha [workspace-name] [--no-install] [--no-git]
+    [--agents <claude,codex,pi>] [--all-agents] [--no-skills]
+
+  Creates a new studio folder, runs git init by default, and copies skills into the workspace.
+  Example: npx henshusha my-studio
+
+Embedded init (existing Git repository):
+  henshusha init [--dir <path>] [--no-install] [--force] [--dry-run]
+    [--agents <claude,codex,pi>] [--all-agents] [--no-skills]
+
+  Merges Henshusha into the current repo without nested .git/.
+  Interactive TTY sessions show a checkbox prompt when no agent flag is passed.
+  Example: npx henshusha init --dir videos
+
+Project commands (run inside a workspace):
+  henshusha validate [project-dir]
+  henshusha render [project-dir] [--dry-run] [--plan-output <path>]
+  henshusha remotion-props [project-dir] [--output <path>] [--fps <number>]
+  henshusha new-project <name>
+  henshusha doctor [--updates]`);
 }
 
 function printWorkspaceNextSteps(targetLabel: string, packageManager: PackageManager): void {
@@ -909,9 +1060,16 @@ function printWorkspaceNextSteps(targetLabel: string, packageManager: PackageMan
 export async function createHenshushaWorkspace(argv = process.argv.slice(2)): Promise<void> {
   const { workspaceName, targetDir, install, git, agentSelection } = parseScaffoldArgs(argv);
   if (await exists(targetDir) && (await readdir(targetDir)).length > 0) throw new Error(`Target directory is not empty: ${targetDir}`);
-  const { packageManager, installResult } = await populateWorkspaceScaffold(targetDir, workspaceName, install, {
+  const { packageManager, installResult, installedSkills } = await populateWorkspaceScaffold(targetDir, workspaceName, install, {
     skillsRoot: targetDir,
-    agentSelection
+    agentSelection,
+    mode: "standalone"
+  });
+  await writeWorkspaceManifest(targetDir, {
+    mode: "standalone",
+    contentRoot: targetDir,
+    selectedAgents: selectedAgentRuntimes(agentSelection),
+    skills: installedSkills
   });
   let gitResult: { ok: boolean; command: string } | undefined;
   if (git) gitResult = await initializeGitRepository(targetDir);
@@ -924,7 +1082,7 @@ export async function createHenshushaWorkspace(argv = process.argv.slice(2)): Pr
 }
 
 export async function initEmbeddedWorkspace(argv = process.argv.slice(2)): Promise<void> {
-  const { targetDir, install, force, agentSelection } = parseInitArgs(argv);
+  const { targetDir, install, force, dryRun } = parseInitArgs(argv);
   const gitRoot = await findGitRoot(process.cwd());
   const relativeTarget = gitRoot ? path.relative(gitRoot, targetDir) : "";
   const targetIsInGitRoot =
@@ -933,15 +1091,37 @@ export async function initEmbeddedWorkspace(argv = process.argv.slice(2)): Promi
     !relativeTarget.startsWith(`..${path.sep}`) &&
     !path.isAbsolute(relativeTarget);
   const effectiveGitRoot = targetIsInGitRoot ? gitRoot : undefined;
-  if (effectiveGitRoot) console.log(`Detected Git repository root: ${effectiveGitRoot}`);
   const skillsRoot = effectiveGitRoot ?? process.cwd();
+  const agentSelection = await resolveInitAgentSelection(argv, skillsRoot, { dryRun });
+  if (dryRun) {
+    if (effectiveGitRoot) console.log(`Detected Git repository root: ${effectiveGitRoot}`);
+    printInitDryRunPlan({
+      targetDir,
+      skillsRoot,
+      ...(effectiveGitRoot ? { gitRoot: effectiveGitRoot } : {}),
+      agentSelection,
+      install,
+      force,
+      embedded: true
+    });
+    return;
+  }
+  if (effectiveGitRoot) console.log(`Detected Git repository root: ${effectiveGitRoot}`);
   const workspaceName = embeddedWorkspaceName(targetDir);
-  const { packageManager, installResult } = await populateWorkspaceScaffold(targetDir, workspaceName, install, {
+  const { packageManager, installResult, installedSkills } = await populateWorkspaceScaffold(targetDir, workspaceName, install, {
     skillsRoot,
     agentSelection,
+    mode: "embedded",
     embedded: true,
     force,
     ...(effectiveGitRoot ? { gitRoot: effectiveGitRoot } : {})
+  });
+  await writeWorkspaceManifest(skillsRoot, {
+    mode: "embedded",
+    contentRoot: targetDir,
+    ...(effectiveGitRoot ? { gitRoot: effectiveGitRoot } : {}),
+    selectedAgents: selectedAgentRuntimes(agentSelection),
+    skills: installedSkills
   });
   console.log(`Initialized Henshusha workspace at ${targetDir}`);
   if (!install) console.log("Skipped dependency install. Run npm install, pnpm install, or bun install inside the workspace.");
@@ -961,9 +1141,7 @@ export async function runCli(argv = process.argv.slice(2)): Promise<void> {
   if (command === "doctor") return doctor(rest);
   if (command === "init") return initEmbeddedWorkspace(rest);
   if (command === "help" || command === "--help" || command === "-h") {
-    console.log(
-      "Usage: henshusha [workspace-name] [--no-install] [--no-git] [--agents <runtimes>] [--all-agents] [--no-skills] | init [--dir <path>] [--no-install] [--force] [--agents <runtimes>] [--all-agents] [--no-skills] | validate [project-dir] | render [project-dir] [--dry-run] [--plan-output <path>] | remotion-props [project-dir] [--output <path>] [--fps <number>] | new-project <name> | doctor [--updates]"
-    );
+    printCliHelp();
     return;
   }
   return createHenshushaWorkspace(argv);

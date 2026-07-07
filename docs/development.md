@@ -44,6 +44,8 @@ The fixture is a stable sandbox for checking the expected workspace layout befor
 
 See [`render-verification.md`](render-verification.md) for the full FFmpeg smoke-test workflow.
 
+Embedded init manual QA (checkbox TUI, manifest rerun): [`embedded-init-qa.md`](embedded-init-qa.md).
+
 ## Bun support
 
 Bun is a first-class contributor path:
