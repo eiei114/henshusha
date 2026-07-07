@@ -49,10 +49,65 @@ async function copyDirectoryContents(
   }
 }
 
-async function copySkills(skillsSource: string, projectRoot: string): Promise<void> {
-  for (const runtime of [".claude/skills", ".codex/skills", ".pi/skills"]) {
-    await mkdir(path.join(projectRoot, runtime), { recursive: true });
-    await copyDirectoryContents(skillsSource, path.join(projectRoot, runtime));
+type AgentRuntime = "claude" | "codex" | "pi";
+
+const AGENT_SKILL_DIRS: Record<AgentRuntime, string> = {
+  claude: ".claude/skills",
+  codex: ".codex/skills",
+  pi: ".pi/skills"
+};
+
+const ALL_AGENT_RUNTIMES: AgentRuntime[] = ["claude", "codex", "pi"];
+
+type AgentSelection =
+  | { mode: "all" }
+  | { mode: "none" }
+  | { mode: "selected"; agents: AgentRuntime[] };
+
+function parseAgentsOption(value: string): AgentRuntime[] {
+  const tokens = value.split(",").map((part) => part.trim().toLowerCase()).filter(Boolean);
+  if (tokens.length === 0) {
+    throw new Error("--agents requires at least one runtime name. Supported runtimes: claude, codex, pi. Example: --agents claude,codex,pi");
+  }
+  const unknown = tokens.filter((name) => !Object.hasOwn(AGENT_SKILL_DIRS, name));
+  if (unknown.length > 0) {
+    throw new Error(`Unknown agent runtime(s): ${unknown.join(", ")}. Supported runtimes: claude, codex, pi. Example: --agents claude,codex,pi`);
+  }
+  return [...new Set(tokens)] as AgentRuntime[];
+}
+
+function resolveAgentSelection(argv: string[]): AgentSelection {
+  const noSkills = argv.includes("--no-skills");
+  const allAgents = argv.includes("--all-agents");
+  const agentsValue = parseOption(argv, "--agents");
+  const specified = [noSkills, allAgents, agentsValue !== undefined].filter(Boolean).length;
+  if (specified > 1) throw new Error("Use only one of --agents, --all-agents, or --no-skills");
+  if (noSkills) return { mode: "none" };
+  if (allAgents) return { mode: "all" };
+  if (agentsValue !== undefined) return { mode: "selected", agents: parseAgentsOption(agentsValue) };
+  return { mode: "all" };
+}
+
+function selectedAgentRuntimes(selection: AgentSelection): AgentRuntime[] {
+  if (selection.mode === "none") return [];
+  if (selection.mode === "all") return ALL_AGENT_RUNTIMES;
+  return selection.agents;
+}
+
+async function copyHenshushaSkills(skillsSource: string, runtimeSkillsDir: string): Promise<void> {
+  await mkdir(runtimeSkillsDir, { recursive: true });
+  for (const entry of await readdir(skillsSource)) {
+    if (!entry.startsWith("henshusha-")) continue;
+    const sourcePath = path.join(skillsSource, entry);
+    const info = await stat(sourcePath);
+    if (!info.isDirectory()) continue;
+    await copyDirectoryContents(sourcePath, path.join(runtimeSkillsDir, entry));
+  }
+}
+
+async function copySkills(skillsSource: string, skillsRoot: string, selection: AgentSelection): Promise<void> {
+  for (const agent of selectedAgentRuntimes(selection)) {
+    await copyHenshushaSkills(skillsSource, path.join(skillsRoot, AGENT_SKILL_DIRS[agent]));
   }
 }
 
@@ -639,27 +694,41 @@ async function newProject(argv: string[]): Promise<void> {
   console.log(`Created Henshusha video project at ${targetDir}`);
 }
 
-function parseScaffoldArgs(argv: string[]): { workspaceName: string; targetDir: string; install: boolean; git: boolean } {
+function parseScaffoldArgs(argv: string[]): { workspaceName: string; targetDir: string; install: boolean; git: boolean; agentSelection: AgentSelection } {
   const install = !argv.includes("--no-install");
   const git = !argv.includes("--no-git");
-  const positional = argv.filter((value) => !["--no-install", "--install", "--no-git", "--git"].includes(value));
-  const workspaceName = positional[0] ?? "henshusha-workspace";
-  if (workspaceName.startsWith("-")) throw new Error("Usage: henshusha [workspace-name] [--no-install] [--no-git]");
-  if (positional.length > 1) throw new Error("Usage: henshusha [workspace-name] [--no-install] [--no-git]");
-  return { workspaceName, targetDir: path.resolve(process.cwd(), workspaceName), install, git };
-}
-
-function parseInitArgs(argv: string[]): { targetDir: string; install: boolean } {
-  const install = !argv.includes("--no-install");
-  const dir = parseOption(argv, "--dir");
+  const agentSelection = resolveAgentSelection(argv);
+  const scaffoldFlags = new Set(["--no-install", "--install", "--no-git", "--git", "--no-skills", "--all-agents", "--agents"]);
   const positional = argv.filter((value, index) => {
-    if (["--no-install", "--install"].includes(value)) return false;
-    if (value === "--dir") return false;
-    if (index > 0 && argv[index - 1] === "--dir") return false;
+    if (scaffoldFlags.has(value)) return false;
+    if (index > 0 && argv[index - 1] === "--agents") return false;
     return true;
   });
-  if (positional.length > 0) throw new Error("Usage: henshusha init [--dir <path>] [--no-install]");
-  return { targetDir: path.resolve(process.cwd(), dir ?? "."), install };
+  const workspaceName = positional[0] ?? "henshusha-workspace";
+  if (workspaceName.startsWith("-")) {
+    throw new Error("Usage: henshusha [workspace-name] [--no-install] [--no-git] [--agents <runtimes>] [--all-agents] [--no-skills]");
+  }
+  if (positional.length > 1) {
+    throw new Error("Usage: henshusha [workspace-name] [--no-install] [--no-git] [--agents <runtimes>] [--all-agents] [--no-skills]");
+  }
+  return { workspaceName, targetDir: path.resolve(process.cwd(), workspaceName), install, git, agentSelection };
+}
+
+function parseInitArgs(argv: string[]): { targetDir: string; install: boolean; agentSelection: AgentSelection } {
+  const install = !argv.includes("--no-install");
+  const dir = parseOption(argv, "--dir");
+  const agentSelection = resolveAgentSelection(argv);
+  const initFlags = new Set(["--no-install", "--install", "--dir", "--no-skills", "--all-agents", "--agents"]);
+  const positional = argv.filter((value, index) => {
+    if (initFlags.has(value)) return false;
+    if (index > 0 && argv[index - 1] === "--dir") return false;
+    if (index > 0 && argv[index - 1] === "--agents") return false;
+    return true;
+  });
+  if (positional.length > 0) {
+    throw new Error("Usage: henshusha init [--dir <path>] [--no-install] [--agents <runtimes>] [--all-agents] [--no-skills]");
+  }
+  return { targetDir: path.resolve(process.cwd(), dir ?? "."), install, agentSelection };
 }
 
 function embeddedWorkspaceName(targetDir: string): string {
@@ -671,7 +740,8 @@ function embeddedWorkspaceName(targetDir: string): string {
 async function populateWorkspaceScaffold(
   targetDir: string,
   workspaceName: string,
-  install: boolean
+  install: boolean,
+  options: { skillsRoot: string; agentSelection: AgentSelection }
 ): Promise<{ packageManager: PackageManager; installResult?: { ok: boolean; command: string } }> {
   const templateSource = await findFirstExisting([
     path.join(packageRoot, "templates", "basic"),
@@ -684,7 +754,7 @@ async function populateWorkspaceScaffold(
   const skipNames = new Set([".git"]);
   const hadPackageJson = await exists(path.join(targetDir, "package.json"));
   await copyDirectoryContents(templateSource, targetDir, { skipNames });
-  await copySkills(skillsSource, targetDir);
+  await copySkills(skillsSource, options.skillsRoot, options.agentSelection);
   await updateWorkspacePackageJson(targetDir, workspaceName, { preserveExistingMetadata: hadPackageJson });
   const packageManager = detectPackageManager();
   if (!install) return { packageManager };
@@ -701,9 +771,12 @@ function printWorkspaceNextSteps(targetLabel: string, packageManager: PackageMan
 }
 
 export async function createHenshushaWorkspace(argv = process.argv.slice(2)): Promise<void> {
-  const { workspaceName, targetDir, install, git } = parseScaffoldArgs(argv);
+  const { workspaceName, targetDir, install, git, agentSelection } = parseScaffoldArgs(argv);
   if (await exists(targetDir) && (await readdir(targetDir)).length > 0) throw new Error(`Target directory is not empty: ${targetDir}`);
-  const { packageManager, installResult } = await populateWorkspaceScaffold(targetDir, workspaceName, install);
+  const { packageManager, installResult } = await populateWorkspaceScaffold(targetDir, workspaceName, install, {
+    skillsRoot: targetDir,
+    agentSelection
+  });
   let gitResult: { ok: boolean; command: string } | undefined;
   if (git) gitResult = await initializeGitRepository(targetDir);
   console.log(`Created Henshusha workspace at ${targetDir}`);
@@ -715,11 +788,15 @@ export async function createHenshushaWorkspace(argv = process.argv.slice(2)): Pr
 }
 
 export async function initEmbeddedWorkspace(argv = process.argv.slice(2)): Promise<void> {
-  const { targetDir, install } = parseInitArgs(argv);
+  const { targetDir, install, agentSelection } = parseInitArgs(argv);
   const gitRoot = await findGitRoot(process.cwd());
   if (gitRoot) console.log(`Detected Git repository root: ${gitRoot}`);
+  const skillsRoot = gitRoot ?? process.cwd();
   const workspaceName = embeddedWorkspaceName(targetDir);
-  const { packageManager, installResult } = await populateWorkspaceScaffold(targetDir, workspaceName, install);
+  const { packageManager, installResult } = await populateWorkspaceScaffold(targetDir, workspaceName, install, {
+    skillsRoot,
+    agentSelection
+  });
   console.log(`Initialized Henshusha workspace at ${targetDir}`);
   if (!install) console.log("Skipped dependency install. Run npm install, pnpm install, or bun install inside the workspace.");
   else if (!installResult?.ok) console.log(`Workspace initialized, but dependency install failed. Run ${installResult?.command ?? "npm install"} inside the workspace.`);
@@ -739,7 +816,7 @@ export async function runCli(argv = process.argv.slice(2)): Promise<void> {
   if (command === "init") return initEmbeddedWorkspace(rest);
   if (command === "help" || command === "--help" || command === "-h") {
     console.log(
-      "Usage: henshusha [workspace-name] [--no-install] [--no-git] | init [--dir <path>] [--no-install] | validate [project-dir] | render [project-dir] [--dry-run] [--plan-output <path>] | remotion-props [project-dir] [--output <path>] [--fps <number>] | new-project <name> | doctor [--updates]"
+      "Usage: henshusha [workspace-name] [--no-install] [--no-git] [--agents <runtimes>] [--all-agents] [--no-skills] | init [--dir <path>] [--no-install] [--agents <runtimes>] [--all-agents] [--no-skills] | validate [project-dir] | render [project-dir] [--dry-run] [--plan-output <path>] | remotion-props [project-dir] [--output <path>] [--fps <number>] | new-project <name> | doctor [--updates]"
     );
     return;
   }
