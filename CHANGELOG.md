@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.5.0 - 2026-07-08
+
+- Add embedded `henshusha init` release boundary: interactive agent checkbox TUI on TTY, `.henshusha/manifest.json` install records, skill collision reporting with `--force`, and `init --dry-run`.
+- Document standalone vs embedded init modes in CLI help and package README.
+- Extend `pnpm test:henshusha` coverage for init dry-run, manifest writes, and post-init `render --dry-run`.
+
 ## 0.4.10 - 2026-07-06
 
 - Stabilize Timeline JSON validation with actionable JSON-path errors and gap/overlap warnings shared by `@henshusha/timeline` and `henshusha validate`.

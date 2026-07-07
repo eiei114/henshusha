@@ -34,6 +34,42 @@ Repository CI keeps this starter checked in three layers: fast PR checks on Ubun
 
 Scaffolding installs workspace dependencies and runs `git init` by default so the first Remotion preview and GitHub handoff are ready quickly. Use `--no-install` or `--no-git` to opt out.
 
+## Standalone vs embedded init
+
+**Standalone** creates a new empty studio directory (default command):
+
+```bash
+npx henshusha@latest my-studio
+# or with explicit agent skills:
+npx henshusha@latest my-studio --agents claude,pi
+npx henshusha@latest my-studio --all-agents
+npx henshusha@latest my-studio --no-skills
+```
+
+**Embedded init** merges Henshusha into an existing Git repository without creating a nested `.git/`:
+
+```bash
+cd your-existing-repo
+npx henshusha@latest init
+npx henshusha@latest init --dir videos
+```
+
+Embedded init flags (practical reference):
+
+| Flag | Purpose |
+| --- | --- |
+| `--dir <path>` | Place scaffold content under a nested folder (for example `videos/projects/sample-video`). |
+| `--agents claude,codex,pi` | Install skills only for listed runtimes (comma-separated). |
+| `--all-agents` | Install Claude Code, Codex, and Pi skills (non-TTY default). |
+| `--no-skills` | Scaffold workspace files without copying agent skills. |
+| `--force` | Overwrite conflicting Henshusha package scripts and skill files. |
+| `--dry-run` | Print the init plan without writing files. |
+| `--no-install` | Skip dependency install (useful in CI and tests). |
+
+On an interactive terminal, `henshusha init` with no agent flag shows a Space-toggle checkbox for Claude Code / Codex / Pi. Reruns preselect agents from `.henshusha/manifest.json` when present. Unchecking a runtime does not delete previously installed skills.
+
+Agent skills install at the Git repository root during embedded init (not under `--dir`), while project files land in the content directory you choose.
+
 The generated workspace is not a single-video project. It is a studio root that can contain many video projects:
 
 ```txt
