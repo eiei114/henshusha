@@ -4,7 +4,7 @@
 
 - [x] Public GitHub repository
 - [x] Initial monorepo skeleton
-- [ ] Package README files
+- [x] Package README files
 - [ ] Timeline schema draft
 - [ ] Agent skill draft files
 
