@@ -42,7 +42,7 @@
   },
   "homepage": "https://github.com/eiei114/henshusha#readme",
   "devDependencies": {
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "typescript": "^6.0.3"
   },
   "workspaces": [
