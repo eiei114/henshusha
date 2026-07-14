@@ -40,7 +40,7 @@ file is the single source of truth for status and seeds.
   `remotion-props`, `doctor:updates`, and the embedded `init`.
 - Timeline JSON (`version: "0.1"`) is the editing source of truth, validated
   with gap/overlap warnings.
-- 9 packages are declared in the monorepo, but **only two have real
+- 10 packages are declared in the monorepo, but **only two have real
   implementations** today: `henshusha` (the starter/CLI) and `@henshusha/timeline`
   (the validator). See [Package maturity](#package-maturity).
 
