@@ -1,4 +1,8 @@
 # Roadmap
+> **Canonical source of truth:** [`../ROADMAP.md`](../ROADMAP.md) — current
+> release status, short-term direction, and the bounded maintenance seed backlog.
+> This historical phase view below is kept for long-arc context and may lag behind
+> shipped milestones; see S2 in the root roadmap to reconcile it.
 
 ## Phase 0 — Bootstrap
 
