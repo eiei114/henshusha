@@ -123,7 +123,11 @@ See [`docs/development.md`](docs/development.md) and [`docs/contributing.md`](do
 
 ## Status
 
-Planning / bootstrap. First milestone: render one captioned MP4 from one source file through the MVP Pipeline.
+**0.5.x shipped.** The manual Timeline JSON → FFmpeg cut + overlay render pipeline is live via the project-local `henshusha` CLI (`validate`, `render`, `remotion-props`, `doctor:updates`). Embedded `init` scaffolds workspaces with agent skills for `analyze-source`, `edit-timeline`, and `render`.
+
+Current focus: stabilizing embedded init across Bun/pnpm/npx and bringing docs in line with what shipped. ASR remains deferred (provider interface only); Remotion render is partial (CLI emits props; in-workspace Remotion is the manual path).
+
+See [`ROADMAP.md`](./ROADMAP.md) for package maturity, technical debt, and maintenance seeds.
 
 ## Bun support
 
