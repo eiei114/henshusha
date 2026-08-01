@@ -58,5 +58,8 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Timeline schema regression
+        run: pnpm test:timeline-schema
+
       - name: Henshusha CLI regression smoke
         run: pnpm test:henshusha
