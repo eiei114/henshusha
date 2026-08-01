@@ -58,5 +58,8 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Dependabot config regression
+        run: pnpm test:dependabot-config
+
       - name: Henshusha CLI regression smoke
         run: pnpm test:henshusha

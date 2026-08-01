@@ -21,6 +21,7 @@ pnpm dev
 
 ```bash
 pnpm typecheck
+pnpm test:dependabot-config
 ```
 
 Add or update docs when changing architecture, package boundaries, or workflow names.
