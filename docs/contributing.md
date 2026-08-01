@@ -21,6 +21,7 @@ pnpm dev
 
 ```bash
 pnpm typecheck
+pnpm test:timeline-schema
 ```
 
 Add or update docs when changing architecture, package boundaries, or workflow names.
