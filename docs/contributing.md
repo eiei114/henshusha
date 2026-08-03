@@ -21,6 +21,7 @@ pnpm dev
 
 ```bash
 pnpm typecheck
+pnpm test:dependabot-config
 pnpm test:timeline-schema
 pnpm test:henshusha
 ```

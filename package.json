@@ -14,6 +14,7 @@
     "dev:sample-media": "node scripts/create-sample-media.mjs",
     "test:henshusha": "node scripts/build.mjs && node scripts/verify-henshusha-cli-entry.mjs && node scripts/verify-henshusha-init.mjs",
     "test:timeline-schema": "node scripts/verify-timeline-schema.mjs",
+    "test:dependabot-config": "node scripts/verify-dependabot-config.mjs",
     "dev:verify-render": "node scripts/verify-render.mjs",
     "lint": "node scripts/typecheck.mjs",
     "test": "node scripts/typecheck.mjs",

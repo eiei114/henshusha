@@ -58,6 +58,8 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Dependabot config regression
+        run: pnpm test:dependabot-config
       - name: Timeline schema regression
         run: pnpm test:timeline-schema
 

@@ -13,7 +13,6 @@ updates:
       - dependencies
     commit-message:
       prefix: chore(deps)
-      include: scope
     cooldown:
       semver-major-days: 7
       semver-minor-days: 3
