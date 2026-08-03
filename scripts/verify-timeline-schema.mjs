@@ -52,6 +52,31 @@ assert(
   `expected gap warning, got:\n${gapResult.warnings.join("\n")}`
 );
 
+const overlapTimeline = {
+  version: "0.1",
+  timeline: {
+    tracks: [
+      {
+        id: "video",
+        type: "video",
+        items: [
+          { start: 0, end: 5, sourceStart: 0 },
+          { start: 4, end: 8, sourceStart: 4 }
+        ]
+      }
+    ]
+  },
+  render: {
+    variant: { aspect: "9:16", resolution: "1080x1920" }
+  }
+};
+const overlapResult = validateTimeline(overlapTimeline);
+assert(overlapResult.ok, "overlap timeline should still validate structurally");
+assert(
+  overlapResult.warnings.some((warning) => warning.includes("overlap")),
+  `expected overlap warning, got:\n${overlapResult.warnings.join("\n")}`
+);
+
 const missingText = {
   version: "0.1",
   timeline: {

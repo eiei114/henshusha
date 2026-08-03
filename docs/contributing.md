@@ -22,6 +22,8 @@ pnpm dev
 ```bash
 pnpm typecheck
 pnpm test:dependabot-config
+pnpm test:timeline-schema
+pnpm test:henshusha
 ```
 
 Add or update docs when changing architecture, package boundaries, or workflow names.
