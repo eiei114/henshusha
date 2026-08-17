@@ -1,26 +1,26 @@
 # Roadmap
 > **Canonical source of truth:** [`../ROADMAP.md`](../ROADMAP.md) — current
 > release status, short-term direction, and the bounded maintenance seed backlog.
-> This historical phase view below is kept for long-arc context and may lag behind
-> shipped milestones; see S2 in the root roadmap to reconcile it.
+> This historical phase view below tracks long-arc milestones; shipped Phase 0/1
+> items are checked through **0.5.0** (see the root roadmap for current status).
 
 ## Phase 0 — Bootstrap
 
 - [x] Public GitHub repository
 - [x] Initial monorepo skeleton
 - [x] Package README files
-- [ ] Timeline schema draft
-- [ ] Agent skill draft files
+- [x] Timeline schema draft
+- [x] Agent skill draft files
 
 ## Phase 1 — MVP Pipeline
 
-- [ ] `henshusha` scaffolder
-- [ ] Timeline JSON schema and validator
-- [ ] ASR provider interface
+- [x] `henshusha` scaffolder
+- [x] Timeline JSON schema and validator
+- [x] ASR provider interface
 - [ ] One ASR adapter
 - [ ] FFmpeg media inspection/extraction wrapper
 - [ ] One Remotion template
-- [ ] Render one captioned MP4
+- [x] Render one captioned MP4
 
 ## Phase 2 — Agent editing
 
