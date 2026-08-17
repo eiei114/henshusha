@@ -11,18 +11,36 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const configPath = path.join(scriptDir, "..", ".github", "dependabot.yml");
 const config = readFileSync(configPath, "utf8");
 
-const npmBlock = config.match(
-  /package-ecosystem:\s*npm[\s\S]*?(?=\n\s{2}-\s+package-ecosystem:|$)/
-);
-assert(npmBlock, "expected npm dependabot config block");
-
-const commitMessageBlock = npmBlock[0].match(/commit-message:[\s\S]*?(?=\n\s{4}[a-z-]+:|$)/);
-assert(commitMessageBlock, "expected npm commit-message block");
-
-const commitMessage = commitMessageBlock[0];
 assert(
-  !/include:\s*scope/.test(commitMessage),
-  "npm dependabot commit-message must not set include: scope when prefix already carries chore(deps); that produces chore(deps)(deps-dev) titles"
+  /package-ecosystem:\s*npm/.test(config),
+  "expected npm dependabot config block"
 );
+
+const lines = config.split(/\r?\n/);
+const commitMessageBlocks = [];
+for (let index = 0; index < lines.length; index += 1) {
+  const match = lines[index].match(/^(\s*)commit-message:\s*$/);
+  if (!match) continue;
+
+  const indent = match[1].length;
+  const blockLines = [lines[index]];
+  for (let next = index + 1; next < lines.length; next += 1) {
+    const line = lines[next];
+    const lineIndent = line.match(/^\s*/)[0].length;
+    if (line.trim() && lineIndent <= indent) break;
+    blockLines.push(line);
+  }
+  commitMessageBlocks.push(blockLines.join("\n"));
+}
+
+assert(commitMessageBlocks.length > 0, "expected dependabot commit-message block");
+
+for (const commitMessage of commitMessageBlocks) {
+  const prefix = commitMessage.match(/^\s*prefix:\s*(.+?)\s*$/m)?.[1] ?? "";
+  assert(
+    !/\([^)]*\)/.test(prefix) || !/^\s*include:\s*scope\s*$/m.test(commitMessage),
+    `dependabot commit-message with prefix ${prefix} must not set include: scope; that produces double-scoped titles`
+  );
+}
 
 console.log("Dependabot config verification passed.");
