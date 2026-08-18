@@ -120,13 +120,30 @@ function parseMapping(startIndex, indent) {
     }
 
     const nextLine = yamlLines[index + 1];
-    if (!nextLine || indentation(nextLine) <= indent) {
+    if (!nextLine) {
       mapping[key] = {};
       index += 1;
       continue;
     }
 
-    [mapping[key], index] = parseBlock(index + 1, indentation(nextLine));
+    const nextIndent = indentation(nextLine);
+    if (nextIndent < indent) {
+      mapping[key] = {};
+      index += 1;
+      continue;
+    }
+
+    if (nextIndent === indent) {
+      if (nextLine.slice(indent).startsWith("- ")) {
+        [mapping[key], index] = parseSequence(index + 1, indent);
+        continue;
+      }
+      mapping[key] = {};
+      index += 1;
+      continue;
+    }
+
+    [mapping[key], index] = parseBlock(index + 1, nextIndent);
   }
 
   return [mapping, index];
@@ -173,11 +190,24 @@ function parseSequence(startIndex, indent) {
       index += 1;
     } else {
       const nextLine = yamlLines[index + 1];
-      if (!nextLine || indentation(nextLine) <= keyIndent) {
+      if (!nextLine) {
         item[key] = {};
         index += 1;
       } else {
-        [item[key], index] = parseBlock(index + 1, indentation(nextLine));
+        const nextIndent = indentation(nextLine);
+        if (nextIndent < keyIndent) {
+          item[key] = {};
+          index += 1;
+        } else if (nextIndent === keyIndent) {
+          if (nextLine.slice(keyIndent).startsWith("- ")) {
+            [item[key], index] = parseSequence(index + 1, keyIndent);
+          } else {
+            item[key] = {};
+            index += 1;
+          }
+        } else {
+          [item[key], index] = parseBlock(index + 1, nextIndent);
+        }
       }
     }
 
