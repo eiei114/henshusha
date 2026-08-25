@@ -281,6 +281,12 @@ const commitMessageBlocks = collectCommitMessageBlocks(dependabotConfig);
 assert(commitMessageBlocks.length > 0, "expected dependabot commit-message block");
 
 for (const commitMessage of commitMessageBlocks) {
+  const prefix = optionalScalar(commitMessage, "prefix", "dependabot commit-message prefix");
+  assert(
+    prefix === "chore(deps)",
+    "dependabot commit-message must set prefix: chore(deps)"
+  );
+
   const include = optionalScalar(commitMessage, "include", "dependabot commit-message include");
   assert(include === undefined || include === "scope", "dependabot commit-message include must be scope when set");
   if (include !== "scope") continue;
