@@ -1,5 +1,7 @@
 # @henshusha/remotion
 
+**Status:** interface/stub — not yet published.
+
 Remotion integration layer for Henshusha.
 
 ## Purpose

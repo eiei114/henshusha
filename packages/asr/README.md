@@ -1,5 +1,7 @@
 # @henshusha/asr
 
+**Status:** interface/stub — not yet published.
+
 Pluggable speech-to-text provider interface for Henshusha.
 
 ## Purpose

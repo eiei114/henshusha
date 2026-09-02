@@ -1,5 +1,7 @@
 # @henshusha/components
 
+**Status:** interface/stub — not yet published.
+
 Reusable caption, layout, and motion components for Henshusha renders.
 
 ## Purpose
