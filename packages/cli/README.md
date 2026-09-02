@@ -1,5 +1,7 @@
 # @henshusha/cli
 
+**Status:** interface/stub — not yet published.
+
 Project-local command surface used by Henshusha agent skills.
 
 ## Purpose

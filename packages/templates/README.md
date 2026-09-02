@@ -1,5 +1,7 @@
 # @henshusha/templates
 
+**Status:** interface/stub — not yet published.
+
 Starter video templates for Henshusha workspaces.
 
 ## Purpose

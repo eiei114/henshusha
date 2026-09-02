@@ -1,5 +1,7 @@
 # @henshusha/core
 
+**Status:** interface/stub — not yet published.
+
 Workspace configuration types and defaults for the Henshusha monorepo.
 
 ## Purpose

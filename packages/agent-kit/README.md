@@ -1,5 +1,7 @@
 # @henshusha/agent-kit
 
+**Status:** interface/stub — not yet published.
+
 Agent skills for Claude Code, Codex, and Pi in Henshusha workspaces.
 
 ## Purpose

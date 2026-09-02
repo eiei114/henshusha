@@ -1,5 +1,7 @@
 # @henshusha/ffmpeg
 
+**Status:** interface/stub — not yet published.
+
 FFmpeg and ffprobe wrapper for the Henshusha render pipeline.
 
 ## Purpose
