@@ -108,7 +108,7 @@ pnpm dev
 Useful scripts:
 
 - `pnpm dev` — run the default local development check.
-- `pnpm dev:doctor` — install dependencies and run typechecks.
+- `pnpm dev:doctor` — run typechecks across all packages (same as `pnpm dev`).
 - `pnpm dev:fixture` — create a local dogfood workspace under `.fixtures/basic-workspace`.
 
 See [`docs/development.md`](docs/development.md) and [`docs/contributing.md`](docs/contributing.md).

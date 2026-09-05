@@ -60,6 +60,9 @@ jobs:
 
       - name: Dependabot config regression
         run: pnpm test:dependabot-config
+
+      - name: Dev script docs regression
+        run: pnpm test:dev-script-docs
       - name: Timeline schema regression
         run: pnpm test:timeline-schema
 
