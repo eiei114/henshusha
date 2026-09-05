@@ -14,7 +14,7 @@ pnpm dev
 ## Scripts
 
 - `pnpm dev` — run the default local development check.
-- `pnpm dev:doctor` — install dependencies and run typechecks.
+- `pnpm dev:doctor` — run typechecks across all packages (same as `pnpm dev`).
 - `pnpm dev:fixture` — create `.fixtures/basic-workspace` for dogfooding generated workspace shape.
 - `pnpm dev:sample-media` — generate the tiny local `input.mp4` fixture used by render smoke tests.
 - `pnpm dev:verify-render` — run doctor, render, and `ffprobe` verification end-to-end.
