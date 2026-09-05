@@ -24,7 +24,7 @@ file is the single source of truth for status and seeds.
 
 | Item | State |
 | --- | --- |
-| npm package `henshusha` | **`0.5.1`** (`latest`, published 2026-07-21, tag `v0.5.1`) |
+| npm package `henshusha` | **`0.5.1`** (`latest`, published 2026-07-20, tag `v0.5.1`) |
 | Release boundary | Embedded `henshusha init` (interactive agent TUI, install manifest, `--force`, `--dry-run`) |
 | Manual edit pipeline | **Live** — Timeline JSON → FFmpeg cut + overlay render, `validate` / `render` / `remotion-props` / `doctor:updates` |
 | Timeline JSON schema | **Stabilized** (`@henshusha/timeline` validator, actionable JSON-path errors, gap/overlap warnings) |
@@ -219,7 +219,7 @@ failures are hard to reproduce without a documented QA checklist.
 and the exact commands to verify a fresh scaffold.
 
 **Acceptance.**
-- Checklist covers Bun and npx on at least Ubuntu and Windows.
+- Checklist covers Bun, pnpm, and npx on Ubuntu, macOS, and Windows.
 - Links to the cross-platform CI workflow that already runs init smoke.
 
 **Effort.** ~45–60 min.
@@ -233,8 +233,8 @@ and the exact commands to verify a fresh scaffold.
    criteria copied in.
 3. The implementing agent opens a PR titled `DOT-xxx: <seed summary>` against
    `main`, following the repo's existing PR convention.
-4. On merge, the seed moves to [Completed seeds](#completed-seeds-merged) and the
-   next seed is promoted.
+4. On merge, record the `DOT-xxx` issue or PR in `Merged via`, move the seed to
+   [Completed seeds](#completed-seeds-merged), and promote the next seed.
 
 ## Maintainer ownership
 
