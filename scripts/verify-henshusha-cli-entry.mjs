@@ -45,6 +45,29 @@ try {
   assert(existsSync(path.join(generatedWorkspace, ".pi", "skills", "henshusha-analyze-source", "SKILL.md")), "missing copied Pi skill");
   assert(existsSync(path.join(generatedWorkspace, "projects", "sample-video", "timelines", "main.timeline.json")), "missing sample timeline");
 
+  const doctorUpdatesResult = spawnSync(process.execPath, [symlinkPath, "doctor", "--updates"], {
+    cwd: generatedWorkspace,
+    encoding: "utf8",
+    timeout: 60_000
+  });
+  assert(!doctorUpdatesResult.error, doctorUpdatesResult.error?.code === "ETIMEDOUT"
+    ? "henshusha doctor --updates timed out after 60s"
+    : `henshusha doctor --updates failed to start\n${doctorUpdatesResult.error?.message ?? "unknown error"}`);
+  assert(
+    doctorUpdatesResult.status === 0,
+    `henshusha doctor --updates exited with ${doctorUpdatesResult.status ?? "null"}\n${doctorUpdatesResult.stderr}`
+  );
+  assert(
+    doctorUpdatesResult.stdout.includes("Henshusha doctor"),
+    `expected doctor banner, got:\n${doctorUpdatesResult.stdout}`
+  );
+  assert(
+    /henshusha is up to date|Update available:|Could not check npm for henshusha updates\./.test(
+      `${doctorUpdatesResult.stdout}\n${doctorUpdatesResult.stderr}`
+    ),
+    `expected doctor --updates status output, got:\n${doctorUpdatesResult.stdout}\n${doctorUpdatesResult.stderr}`
+  );
+
   console.log(`Verified henshusha CLI entrypoint via ${entryMode}.`);
 } finally {
   rmSync(tmpRoot, { recursive: true, force: true });
