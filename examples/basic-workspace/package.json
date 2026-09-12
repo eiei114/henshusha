@@ -22,7 +22,7 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "henshusha": "0.4.6",
+    "henshusha": "0.5.1",
     "typescript": "^5.5.4"
   }
 }
