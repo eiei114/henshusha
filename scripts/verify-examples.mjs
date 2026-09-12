@@ -1,0 +1,42 @@
+#!/usr/bin/env node
+import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, "..");
+
+const publishedVersion = JSON.parse(
+  readFileSync(path.join(repoRoot, "packages/henshusha/package.json"), "utf8")
+).version;
+assert(publishedVersion, "packages/henshusha/package.json must define version");
+
+const examplePackageJson = JSON.parse(
+  readFileSync(path.join(repoRoot, "examples/basic-workspace/package.json"), "utf8")
+);
+assert(
+  examplePackageJson.devDependencies?.henshusha === publishedVersion,
+  `examples/basic-workspace must pin henshusha@${publishedVersion}, got ${examplePackageJson.devDependencies?.henshusha ?? "missing"}`
+);
+
+const basicReadme = readFileSync(path.join(repoRoot, "examples/basic/README.md"), "utf8");
+for (const needle of ["basic-workspace", "npm run validate", "npm run doctor:updates", "pnpm dev:fixture"]) {
+  assert(basicReadme.includes(needle), `examples/basic/README.md must mention ${needle}`);
+}
+
+const distEntry = path.join(repoRoot, "packages/henshusha/dist/index.js");
+const projectDir = path.join(repoRoot, "examples/basic-workspace/projects/sample-video");
+const validate = spawnSync(process.execPath, [distEntry, "validate", projectDir], {
+  cwd: repoRoot,
+  encoding: "utf8",
+  timeout: 60_000
+});
+assert(!validate.error, validate.error?.message ?? "validate failed to start");
+assert(validate.status === 0, `example validate failed\n${validate.stderr}${validate.stdout}`);
+
+console.log("Examples verification passed.");
