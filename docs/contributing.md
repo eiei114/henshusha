@@ -23,6 +23,7 @@ pnpm dev
 pnpm typecheck
 pnpm test:ci-docs
 pnpm test:dev-script-docs
+pnpm test:version-policy-docs
 pnpm test:examples
 pnpm test:dependabot-config
 pnpm test:timeline-schema
@@ -41,6 +42,14 @@ bun run dev
 ```
 
 Do not add package scripts that only work under pnpm unless there is a Bun-compatible path. Do not introduce Bun-only runtime APIs in published packages unless there is a Node-compatible fallback.
+
+## Version policy
+
+The root `package.json` stays at **`0.0.1`** because this repository is a private monorepo workspace. It is not published to npm and its version is not user-facing.
+
+The published npm package version lives in **`packages/henshusha/package.json`**. That file is the single version source for `henshusha` releases, npm tags, and the publish workflow in [`.github/workflows/publish-henshusha.yml`](../.github/workflows/publish-henshusha.yml).
+
+Other workspace packages under `packages/*` may remain at `0.0.0` while they are stubs or build-only dependencies. Do not bump the root monorepo version when shipping a `henshusha` release.
 
 ## Release notes
 

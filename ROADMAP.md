@@ -16,7 +16,7 @@ small, reviewable issues.
 A historical phase view lives in [`docs/roadmap.md`](docs/roadmap.md); this root
 file is the single source of truth for status and seeds.
 
-**Last refreshed:** 2026-09-05 (DOT-1012)
+**Last refreshed:** 2026-09-13 (DOT-1443)
 
 ---
 
@@ -71,8 +71,8 @@ small, independently-shippable changes.
 ### 0.5.x — Stabilize the manual pipeline & docs
 
 - Keep embedded `init` robust across Bun/pnpm/npx and the three agent runtimes.
-- Finish remaining doc/test seeds below (Remotion boundary, version policy,
-  `doctor:updates` smoke).
+- Finish remaining doc/test seeds below (Timeline migration path, multi-project
+  examples, cross-platform `doctor:updates` smoke).
 - Make the roadmap self-maintaining via the seed backlog.
 
 ### 0.6 — Promote the first library package
@@ -93,24 +93,20 @@ small, independently-shippable changes.
 ## Known technical debt
 
 - **Version drift.** Root `package.json` is `0.0.1` (private) while the published
-  `henshusha` is `0.5.1`; the policy is undocumented (see seed S10).
+  `henshusha` is `0.5.1`; the policy is documented in `docs/contributing.md`.
 - **Timeline schema versioning.** `version: "0.1"` has no documented upgrade/migration
   path for future breaking changes.
 - **Test surface.** Init flows and timeline validation are covered; `doctor:updates`
   and render-plan determinism have little dedicated coverage.
 - **Single-project examples.** Fixture and starter only demonstrate one
   `projects/sample-video` layout; multi-project and non-9:16 variants are missing.
-- **Remotion lib boundary.** `docs/remotion.md` describes the in-workspace path but
-  does not cross-link `render-verification.md` or clarify what `@henshusha/remotion`
-  defers.
 
 ---
 
 ## Areas needing improvement
 
-- **Docs:** version-source policy; Remotion live-vs-deferred boundary with cross-links.
-- **Tests:** `doctor:updates` smoke in `pnpm test:henshusha`; cross-platform smoke
-  for `doctor:updates`.
+- **Docs:** Timeline JSON schema migration path (S11); multi-project examples (S7).
+- **Tests:** cross-platform smoke for `doctor:updates` in the smoke-matrix workflow.
 - **Examples:** a non-9:16 variant and a multi-project workspace example beyond
   `projects/sample-video`.
 - **Observability:** structured render-job logging and a clearer `jobs/` artifact
@@ -130,6 +126,9 @@ These seeds were promoted and merged; kept here for audit trail.
 | S4 | Extend Timeline JSON validation tests | DOT-932 / CI wiring |
 | S8 | Surface ROADMAP.md from the README | prior maintenance |
 | S9 | Tidy Dependabot commit-message prefix | DOT-1589 |
+| S5 | Add `henshusha doctor:updates` smoke test | DOT-1676 |
+| S6 | Document Remotion integration boundary | DOT-1758 |
+| S10 | Document monorepo version policy | DOT-1443 |
 
 ---
 
@@ -138,35 +137,6 @@ These seeds were promoted and merged; kept here for audit trail.
 Each seed is bounded to **30–90 minutes** and includes acceptance criteria so the
 weekly planner can promote it directly into a backlog issue. Seeds are independent;
 pick any one.
-
-### S5 — Add a `henshusha doctor:updates` smoke test
-
-**Why.** `doctor:updates` is a user-facing command documented in README and skills,
-but it is not exercised in `pnpm test:henshusha`; regressions would go unnoticed.
-
-**Scope.** Extend the CLI entry regression (`scripts/verify-henshusha-cli-entry.mjs`
-or the init test) to run `doctor:updates` against a fresh fixture and assert exit 0.
-
-**Acceptance.**
-- `pnpm test:henshusha` includes a `doctor:updates` assertion that passes locally.
-
-**Effort.** ~45–75 min.
-
-### S6 — Document the Remotion integration boundary
-
-**Why.** Contributors and agents cannot tell which Remotion pieces are live vs
-deferred without reading multiple docs; the stub `@henshusha/remotion` package adds
-confusion.
-
-**Scope.** Expand `docs/remotion.md` with a short "Integration boundary" section
-clarifying what the CLI emits (`timeline-props.json`), what is rendered in-workspace
-via Remotion, and what the `@henshusha/remotion` lib package defers.
-
-**Acceptance.**
-- A reader can tell which Remotion pieces are live vs future.
-- Cross-links `render-verification.md`.
-
-**Effort.** ~45–60 min.
 
 ### S7 — Multi-project workspace example
 
@@ -181,20 +151,6 @@ for workspaces with multiple videos or different aspect ratios.
 - `validate` succeeds on each from the workspace root.
 
 **Effort.** ~60–90 min.
-
-### S10 — Document the monorepo version policy
-
-**Why.** Root `package.json` stays at `0.0.1` while `packages/henshusha` is `0.5.1`;
-new contributors assume a versioning bug.
-
-**Scope.** Add a short note to `docs/contributing.md` (or `docs/development.md`)
-explaining that the root `package.json` stays at `0.0.1` (private) and only
-`packages/henshusha/package.json` is the published version source.
-
-**Acceptance.**
-- One paragraph states the version-source rule and points at the publish workflow.
-
-**Effort.** ~20–30 min.
 
 ### S11 — Document Timeline JSON schema migration path
 

@@ -69,6 +69,9 @@ jobs:
       - name: CI docs regression
         run: pnpm test:ci-docs
 
+      - name: Version policy docs regression
+        run: pnpm test:version-policy-docs
+
       - name: Examples regression
         run: pnpm test:examples
 
