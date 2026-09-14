@@ -15,9 +15,14 @@ const publishedVersion = JSON.parse(
 ).version;
 
 assert(rootVersion === "0.0.1", `root package.json version must stay 0.0.1, got ${rootVersion}`);
+const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 assert(
-  publishedVersion && publishedVersion !== "0.0.1",
-  "packages/henshusha/package.json must define the published semver"
+  typeof publishedVersion === "string" && SEMVER_PATTERN.test(publishedVersion),
+  `packages/henshusha/package.json must define a valid published semver, got ${publishedVersion}`
+);
+assert(
+  publishedVersion !== "0.0.1",
+  "packages/henshusha/package.json must not reuse the private root version 0.0.1"
 );
 
 const contributing = readFileSync(path.join(repoRoot, "docs/contributing.md"), "utf8").toLowerCase();

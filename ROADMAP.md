@@ -100,9 +100,6 @@ small, independently-shippable changes.
   and render-plan determinism have little dedicated coverage.
 - **Single-project examples.** Fixture and starter only demonstrate one
   `projects/sample-video` layout; multi-project and non-9:16 variants are missing.
-- **Remotion lib boundary.** `docs/remotion.md` describes the in-workspace path but
-  does not cross-link `render-verification.md` or clarify what `@henshusha/remotion`
-  defers.
 
 ---
 

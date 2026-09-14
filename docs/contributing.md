@@ -21,6 +21,7 @@ pnpm dev
 
 ```bash
 pnpm typecheck
+pnpm test:ci-docs
 pnpm test:dev-script-docs
 pnpm test:version-policy-docs
 pnpm test:examples

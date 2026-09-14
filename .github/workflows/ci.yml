@@ -66,6 +66,9 @@ jobs:
       - name: Dev script docs regression
         run: pnpm test:dev-script-docs
 
+      - name: CI docs regression
+        run: pnpm test:ci-docs
+
       - name: Version policy docs regression
         run: pnpm test:version-policy-docs
 
