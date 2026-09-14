@@ -17,7 +17,7 @@ projects/
 
 Start by opening this workspace with Claude Code, Codex, or Pi, then ask an agent to work on `projects/sample-video`.
 
-`npx henshusha my-studio` installs workspace dependencies and runs `git init` by default, so Remotion preview and GitHub setup are ready immediately. Use `--no-install` or `--no-git` if you want to skip either step.
+`npx henshusha@latest my-studio` (or `bunx henshusha@latest my-studio`) installs workspace dependencies and runs `git init` by default, so Remotion preview and GitHub setup are ready immediately. Use `--no-install` or `--no-git` if you want to skip either step.
 
 MVP path:
 

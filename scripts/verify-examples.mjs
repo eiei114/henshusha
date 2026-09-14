@@ -25,8 +25,25 @@ assert(
 );
 
 const basicReadme = readFileSync(path.join(repoRoot, "examples/basic/README.md"), "utf8");
-for (const needle of ["basic-workspace", "npm run validate", "npm run doctor:updates", "pnpm dev:fixture"]) {
+for (const needle of [
+  "basic-workspace",
+  "npm run validate",
+  "npm run doctor:updates",
+  "pnpm dev:fixture",
+  "Copy-Item -Recurse"
+]) {
   assert(basicReadme.includes(needle), `examples/basic/README.md must mention ${needle}`);
+}
+
+const workspaceReadme = readFileSync(
+  path.join(repoRoot, "examples/basic-workspace/README.md"),
+  "utf8"
+);
+for (const needle of ["henshusha@latest", "bunx henshusha@latest"]) {
+  assert(
+    workspaceReadme.includes(needle),
+    `examples/basic-workspace/README.md must mention ${needle}`
+  );
 }
 
 const distEntry = path.join(repoRoot, "packages/henshusha/dist/index.js");
