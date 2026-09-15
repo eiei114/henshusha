@@ -6,9 +6,19 @@ The runnable workspace lives in [`../basic-workspace/`](../basic-workspace/). It
 
 ## Copy and run
 
+macOS / Linux:
+
 ```bash
 cp -r examples/basic-workspace /path/to/my-studio
 cd /path/to/my-studio
+npm install
+```
+
+Windows (PowerShell):
+
+```powershell
+Copy-Item -Recurse examples/basic-workspace C:\path\to\my-studio
+cd C:\path\to\my-studio
 npm install
 ```
 
