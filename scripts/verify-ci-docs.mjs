@@ -12,11 +12,37 @@ const repoRoot = path.resolve(scriptDir, "..");
 const ciWorkflow = readFileSync(path.join(repoRoot, ".github", "workflows", "ci.yml"), "utf8");
 const readme = readFileSync(path.join(repoRoot, "README.md"), "utf8");
 
-for (const pathPattern of ['"docs/**"', '"README.md"']) {
-  assert(
-    ciWorkflow.includes(pathPattern),
-    `ci.yml must run when ${pathPattern} changes so documentation regressions are checked`
-  );
+const workflowLines = ciWorkflow.split(/\r?\n/);
+function eventPaths(eventName) {
+  const eventStart = workflowLines.findIndex((line) => line === `  ${eventName}:`);
+  assert(eventStart >= 0, `ci.yml must define the ${eventName} event`);
+
+  const eventLines = [];
+  for (let index = eventStart + 1; index < workflowLines.length; index += 1) {
+    const line = workflowLines[index];
+    if (line.trim() && (line.match(/^ */)?.[0].length ?? 0) <= 2) break;
+    eventLines.push(line);
+  }
+
+  const pathsStart = eventLines.findIndex((line) => line === "    paths:");
+  assert(pathsStart >= 0, `ci.yml must define ${eventName}.paths`);
+  const paths = [];
+  for (const line of eventLines.slice(pathsStart + 1)) {
+    if (!line.trim()) break;
+    if ((line.match(/^ */)?.[0].length ?? 0) <= 4) break;
+    paths.push(line.trim().replace(/^-\s+/, "").replace(/^(["'])(.*)\1$/, "$2"));
+  }
+  return paths;
+}
+
+for (const eventName of ["pull_request", "push"]) {
+  const paths = eventPaths(eventName);
+  for (const pathPattern of ["docs/**", "README.md"]) {
+    assert(
+      paths.includes(pathPattern),
+      `ci.yml ${eventName}.paths must include ${pathPattern} so documentation regressions are checked`
+    );
+  }
 }
 
 const packageJson = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
