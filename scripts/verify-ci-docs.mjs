@@ -12,6 +12,13 @@ const repoRoot = path.resolve(scriptDir, "..");
 const ciWorkflow = readFileSync(path.join(repoRoot, ".github", "workflows", "ci.yml"), "utf8");
 const readme = readFileSync(path.join(repoRoot, "README.md"), "utf8");
 
+for (const pathPattern of ['"docs/**"', '"README.md"']) {
+  assert(
+    ciWorkflow.includes(pathPattern),
+    `ci.yml must run when ${pathPattern} changes so documentation regressions are checked`
+  );
+}
+
 const packageJson = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
 const packageScripts = new Set(Object.keys(packageJson.scripts ?? {}));
 
