@@ -47,13 +47,18 @@ for (const needle of ["henshusha@latest", "bunx henshusha@latest"]) {
 }
 
 const distEntry = path.join(repoRoot, "packages/henshusha/dist/index.js");
-const projectDir = path.join(repoRoot, "examples/basic-workspace/projects/sample-video");
-const validate = spawnSync(process.execPath, [distEntry, "validate", projectDir], {
-  cwd: repoRoot,
-  encoding: "utf8",
-  timeout: 60_000
-});
-assert(!validate.error, validate.error?.message ?? "validate failed to start");
-assert(validate.status === 0, `example validate failed\n${validate.stderr}${validate.stdout}`);
+for (const projectName of ["sample-video", "short-clip"]) {
+  const projectDir = path.join(repoRoot, "examples/basic-workspace/projects", projectName);
+  const validate = spawnSync(process.execPath, [distEntry, "validate", projectDir], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    timeout: 60_000
+  });
+  assert(!validate.error, validate.error?.message ?? `${projectName} validate failed to start`);
+  assert(
+    validate.status === 0,
+    `${projectName} example validate failed\n${validate.stderr}${validate.stdout}`
+  );
+}
 
 console.log("Examples verification passed.");

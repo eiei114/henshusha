@@ -6,13 +6,20 @@ The workspace root contains shared config and agent skills. Create one folder pe
 
 ```txt
 projects/
-  sample-video/
+  sample-video/       # 9:16 digest example
     sources/raw/      # original media; do not edit in place
     scripts/          # edit plans and human-written scripts
     transcripts/      # future ASR outputs
     timelines/        # Timeline JSON source of truth
     renders/          # exported MP4s
     jobs/             # generated job files
+  short-clip/         # 1:1 square example
+    sources/raw/
+    scripts/
+    transcripts/
+    timelines/
+    renders/
+    jobs/
 ```
 
 Start by opening this workspace with Claude Code, Codex, or Pi, then ask an agent to work on `projects/sample-video`.
@@ -29,6 +36,8 @@ MVP path:
 6. Run `npm run render:dry-run` to inspect `projects/sample-video/jobs/render-plan.json`.
 7. Run `npm run remotion:props` for Remotion preview.
 8. Run `npm run render` when FFmpeg is installed.
+
+The fixture includes both `projects/sample-video` (9:16) and `projects/short-clip` (1:1). From the workspace root, validate either project with `npx henshusha validate projects/<project-name>`.
 
 Check for package updates any time:
 
