@@ -32,7 +32,9 @@ async function runTsc(packageName, noEmit) {
 console.log("build timeline (typecheck prerequisite)");
 await runTsc("timeline", false);
 
-for (const packageName of typecheckOrder) {
-  console.log(`typecheck ${packageName}`);
-  await runTsc(packageName, true);
-}
+await Promise.all(
+  typecheckOrder.map(async (packageName) => {
+    console.log(`typecheck ${packageName}`);
+    await runTsc(packageName, true);
+  })
+);
