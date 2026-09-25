@@ -28,9 +28,8 @@ async function runTsc(packageName) {
   });
 }
 
-for (const packageName of buildOrder) {
-  await runTsc(packageName);
-}
+await runTsc("timeline");
+await Promise.all(buildOrder.slice(1).map((packageName) => runTsc(packageName)));
 
 const timelineDist = path.join(packagesDir, "timeline", "dist");
 const vendorDist = path.join(packagesDir, "henshusha", "dist", "timeline");
