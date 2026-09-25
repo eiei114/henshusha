@@ -28,16 +28,18 @@ function eventPaths(eventName) {
   assert(pathsStart >= 0, `ci.yml must define ${eventName}.paths`);
   const paths = [];
   for (const line of eventLines.slice(pathsStart + 1)) {
-    if (!line.trim()) break;
-    if ((line.match(/^ */)?.[0].length ?? 0) <= 4) break;
-    paths.push(line.trim().replace(/^-\s+/, "").replace(/^(["'])(.*)\1$/, "$2"));
+    if (!line.trim()) continue;
+    const pathMatch = line.match(/^      -\s+(.+)$/);
+    if (!pathMatch) break;
+    paths.push(pathMatch[1].replace(/^(["'])(.*)\1$/, "$2"));
   }
   return paths;
 }
 
+const requiredPathPatterns = ["docs/**", "README.md"];
 for (const eventName of ["pull_request", "push"]) {
   const paths = eventPaths(eventName);
-  for (const pathPattern of ["docs/**", "README.md"]) {
+  for (const pathPattern of requiredPathPatterns) {
     assert(
       paths.includes(pathPattern),
       `ci.yml ${eventName}.paths must include ${pathPattern} so documentation regressions are checked`
