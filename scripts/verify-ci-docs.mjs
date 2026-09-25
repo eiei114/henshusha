@@ -29,8 +29,15 @@ function eventPaths(eventName) {
   const paths = [];
   for (const line of eventLines.slice(pathsStart + 1)) {
     if (!line.trim()) continue;
+    if (/^\s*#/.test(line.trim())) continue;
+    const bareItem = line.match(/^      -\s*$/);
+    assert(!bareItem, `ci.yml ${eventName}.paths must contain only string entries`);
     const pathMatch = line.match(/^      -\s+(.+)$/);
-    if (!pathMatch) break;
+    if (!pathMatch) {
+      const stillInPathsBlock = (line.match(/^ */)?.[0].length ?? 0) >= 6;
+      assert(!stillInPathsBlock, `ci.yml ${eventName}.paths contains invalid entry: ${line.trim()}`);
+      break;
+    }
     paths.push(pathMatch[1].replace(/^(["'])(.*)\1$/, "$2"));
   }
   return paths;
