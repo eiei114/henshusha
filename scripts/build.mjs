@@ -29,7 +29,11 @@ async function runTsc(packageName) {
 }
 
 await runTsc("timeline");
-await Promise.all(buildOrder.slice(1).map((packageName) => runTsc(packageName)));
+const buildResults = await Promise.allSettled(
+  buildOrder.slice(1).map((packageName) => runTsc(packageName))
+);
+const failedBuild = buildResults.find((result) => result.status === "rejected");
+if (failedBuild) throw failedBuild.reason;
 
 const timelineDist = path.join(packagesDir, "timeline", "dist");
 const vendorDist = path.join(packagesDir, "henshusha", "dist", "timeline");

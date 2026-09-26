@@ -32,9 +32,11 @@ async function runTsc(packageName, noEmit) {
 console.log("build timeline (typecheck prerequisite)");
 await runTsc("timeline", false);
 
-await Promise.all(
+const typecheckResults = await Promise.allSettled(
   typecheckOrder.map(async (packageName) => {
     console.log(`typecheck ${packageName}`);
     await runTsc(packageName, true);
   })
 );
+const failedTypecheck = typecheckResults.find((result) => result.status === "rejected");
+if (failedTypecheck) throw failedTypecheck.reason;
