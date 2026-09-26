@@ -3,6 +3,13 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+let parseDocument;
+try {
+  ({ parseDocument } = await import("yaml"));
+} catch (error) {
+  throw new Error('CI docs verifier requires the "yaml" package to parse workflow values', { cause: error });
+}
+
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
@@ -14,60 +21,31 @@ const readme = readFileSync(path.join(repoRoot, "README.md"), "utf8");
 
 const workflowLines = ciWorkflow.split(/\r?\n/);
 
-function removeYamlComment(value) {
-  let quote = null;
-  for (let index = 0; index < value.length; index += 1) {
-    const character = value[index];
-    if (character === "\\" && quote === '"') {
-      index += 1;
-      continue;
-    }
-    if ((character === '"' || character === "'") && (quote === null || quote === character)) {
-      quote = quote === null ? character : null;
-    }
-    if (character === "#" && quote === null && (index === 0 || /\s/.test(value[index - 1]))) {
-      return value.slice(0, index).trimEnd();
-    }
-  }
-  return value.trimEnd();
-}
-
 function parseYamlString(value, context) {
-  const trimmed = removeYamlComment(value).trim();
-  assert(trimmed, `${context} must contain only string entries`);
-  if (trimmed.startsWith('"')) {
-    assert(trimmed.endsWith('"'), `${context} must contain only string entries`);
-    try {
-      return JSON.parse(trimmed);
-    } catch {
-      assert(false, `${context} must contain only string entries`);
-    }
-  }
-  if (trimmed.startsWith("'")) {
-    assert(trimmed.endsWith("'"), `${context} must contain only string entries`);
-    return trimmed.slice(1, -1).replace(/''/g, "'");
-  }
-  assert(
-    !/^(?:true|false|null|~|[-+]?\d+(?:\.\d+)?)$/i.test(trimmed) &&
-      !/^[{[&*!|>]/.test(trimmed) &&
-      !/^[^:]+:\s/.test(trimmed),
-    `${context} must contain only string entries`
-  );
-  return trimmed;
+  const document = parseDocument(value, { schema: "core" });
+  assert(!document.errors.length, `${context} must contain only string entries: ${document.errors[0]?.message}`);
+  const parsed = document.toJS();
+  assert(typeof parsed === "string", `${context} must contain only string entries`);
+  return parsed;
 }
 
 function parseYamlStringList(lines, parentIndent, context) {
-  const firstEntry = lines.find((line) => line.trim() && !/^\s*#/.test(line));
+  const firstEntry = lines.find((line) => {
+    if (!line.trim() || /^\s*#/.test(line)) return false;
+    const indent = line.match(/^ */)[0].length;
+    return indent >= parentIndent && /^\s*-\s*/.test(line);
+  });
   assert(firstEntry, `${context} must contain only string entries`);
   const entryIndent = firstEntry.match(/^ */)[0].length;
   const entries = [];
   for (const line of lines) {
     if (!line.trim() || /^\s*#/.test(line)) continue;
     const indent = line.match(/^ */)[0].length;
-    if (indent <= parentIndent) break;
+    const isItem = /^\s*-\s*/.test(line);
+    if (indent < parentIndent || (indent === parentIndent && !isItem)) break;
+    assert(isItem, `${context} contains invalid entry: ${line.trim()}`);
     assert(indent === entryIndent, `${context} contains invalid entry: ${line.trim()}`);
     const match = line.match(/^\s*-\s*(.*)$/);
-    assert(match, `${context} contains invalid entry: ${line.trim()}`);
     entries.push(parseYamlString(match[1], context));
   }
   return entries;
