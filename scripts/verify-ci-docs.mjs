@@ -13,6 +13,66 @@ const ciWorkflow = readFileSync(path.join(repoRoot, ".github", "workflows", "ci.
 const readme = readFileSync(path.join(repoRoot, "README.md"), "utf8");
 
 const workflowLines = ciWorkflow.split(/\r?\n/);
+
+function removeYamlComment(value) {
+  let quote = null;
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
+    if (character === "\\" && quote === '"') {
+      index += 1;
+      continue;
+    }
+    if ((character === '"' || character === "'") && (quote === null || quote === character)) {
+      quote = quote === null ? character : null;
+    }
+    if (character === "#" && quote === null && (index === 0 || /\s/.test(value[index - 1]))) {
+      return value.slice(0, index).trimEnd();
+    }
+  }
+  return value.trimEnd();
+}
+
+function parseYamlString(value, context) {
+  const trimmed = removeYamlComment(value).trim();
+  assert(trimmed, `${context} must contain only string entries`);
+  if (trimmed.startsWith('"')) {
+    assert(trimmed.endsWith('"'), `${context} must contain only string entries`);
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      assert(false, `${context} must contain only string entries`);
+    }
+  }
+  if (trimmed.startsWith("'")) {
+    assert(trimmed.endsWith("'"), `${context} must contain only string entries`);
+    return trimmed.slice(1, -1).replace(/''/g, "'");
+  }
+  assert(
+    !/^(?:true|false|null|~|[-+]?\d+(?:\.\d+)?)$/i.test(trimmed) &&
+      !/^[{[&*!|>]/.test(trimmed) &&
+      !/^[^:]+:\s/.test(trimmed),
+    `${context} must contain only string entries`
+  );
+  return trimmed;
+}
+
+function parseYamlStringList(lines, parentIndent, context) {
+  const firstEntry = lines.find((line) => line.trim() && !/^\s*#/.test(line));
+  assert(firstEntry, `${context} must contain only string entries`);
+  const entryIndent = firstEntry.match(/^ */)[0].length;
+  const entries = [];
+  for (const line of lines) {
+    if (!line.trim() || /^\s*#/.test(line)) continue;
+    const indent = line.match(/^ */)[0].length;
+    if (indent <= parentIndent) break;
+    assert(indent === entryIndent, `${context} contains invalid entry: ${line.trim()}`);
+    const match = line.match(/^\s*-\s*(.*)$/);
+    assert(match, `${context} contains invalid entry: ${line.trim()}`);
+    entries.push(parseYamlString(match[1], context));
+  }
+  return entries;
+}
+
 function eventPaths(eventName) {
   const eventStart = workflowLines.findIndex((line) => line === `  ${eventName}:`);
   assert(eventStart >= 0, `ci.yml must define the ${eventName} event`);
@@ -26,21 +86,7 @@ function eventPaths(eventName) {
 
   const pathsStart = eventLines.findIndex((line) => line === "    paths:");
   assert(pathsStart >= 0, `ci.yml must define ${eventName}.paths`);
-  const paths = [];
-  for (const line of eventLines.slice(pathsStart + 1)) {
-    if (!line.trim()) continue;
-    if (/^\s*#/.test(line.trim())) continue;
-    const bareItem = line.match(/^      -\s*$/);
-    assert(!bareItem, `ci.yml ${eventName}.paths must contain only string entries`);
-    const pathMatch = line.match(/^      -\s+(.+)$/);
-    if (!pathMatch) {
-      const stillInPathsBlock = (line.match(/^ */)?.[0].length ?? 0) >= 6;
-      assert(!stillInPathsBlock, `ci.yml ${eventName}.paths contains invalid entry: ${line.trim()}`);
-      break;
-    }
-    paths.push(pathMatch[1].replace(/^(["'])(.*)\1$/, "$2"));
-  }
-  return paths;
+  return parseYamlStringList(eventLines.slice(pathsStart + 1), 4, `ci.yml ${eventName}.paths`);
 }
 
 const requiredPathPatterns = ["docs/**", "README.md"];
