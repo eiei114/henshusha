@@ -1,6 +1,6 @@
 {
   "name": "henshusha-monorepo",
-  "version": "0.0.1",
+  "version": "0.5.2",
   "private": true,
   "description": "Agent-native video editing workspace for Claude Code, Codex, and Pi.",
   "type": "module",
