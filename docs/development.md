@@ -42,7 +42,20 @@ ffprobe -hide_banner -show_streams projects/sample-video/renders/output.mp4
 # open with claude / codex / pi when local skill copying exists
 ```
 
-The two `validate` commands are the multi-project fixture check. Each command should print `Valid timeline:` followed by that project's `timelines/main.timeline.json` path. The fixture is a stable sandbox for checking the expected workspace layout before publishing a starter change. The dry-run command writes `projects/sample-video/jobs/render-plan.json` without requiring FFmpeg. The Remotion props command writes `projects/sample-video/remotion/timeline-props.json`.
+The two `validate` commands are the multi-project fixture check. To run only this check from a clean checkout, use:
+
+```bash
+pnpm install
+pnpm build
+pnpm dev:fixture -- --force
+cd .fixtures/basic-workspace
+node ../../packages/henshusha/dist/index.js validate projects/sample-video
+# expected: Valid timeline: projects/sample-video/timelines/main.timeline.json
+node ../../packages/henshusha/dist/index.js validate projects/short-clip
+# expected: Valid timeline: projects/short-clip/timelines/main.timeline.json
+```
+
+Both commands must exit with status 0 and print the shown `Valid timeline:` line. A missing `dist/index.js` means `pnpm build` was skipped or failed; `ENOENT` for a timeline path means the fixture was not regenerated with `pnpm dev:fixture -- --force`; any other validation error indicates a malformed fixture timeline. The fixture is a stable sandbox for checking the expected workspace layout before publishing a starter change. The dry-run command writes `projects/sample-video/jobs/render-plan.json` without requiring FFmpeg. The Remotion props command writes `projects/sample-video/remotion/timeline-props.json`.
 
 See [`render-verification.md`](render-verification.md) for the full FFmpeg smoke-test workflow.
 
