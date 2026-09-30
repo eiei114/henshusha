@@ -29,6 +29,8 @@ Generated workspaces may later support upgrades with a command like `henshusha u
 
 ## Dogfood loop
 
+Use Node.js 20 or newer and pnpm 9.15.9 before running this fixture and render procedure.
+
 ```bash
 pnpm build
 pnpm dev:fixture
@@ -44,7 +46,7 @@ ffprobe -hide_banner -show_streams projects/sample-video/renders/output.mp4
 
 The two `validate` commands are the multi-project fixture check. To run only this check from a clean checkout, use:
 
-Ensure `ffmpeg` is installed and available on `PATH`; `pnpm dev:fixture` generates the fixture input with FFmpeg.
+Use Node.js 20 or newer and pnpm 9.15.9 before installing dependencies. Ensure `ffmpeg` is installed and available on `PATH`; `pnpm dev:fixture` generates the fixture input with FFmpeg.
 
 ```bash
 pnpm install
@@ -52,12 +54,12 @@ pnpm build
 pnpm dev:fixture -- --force
 cd .fixtures/basic-workspace
 node ../../packages/henshusha/dist/index.js validate projects/sample-video
-# expected: Valid timeline: projects/sample-video/timelines/main.timeline.json
+# expected on POSIX: Valid timeline: projects/sample-video/timelines/main.timeline.json
 node ../../packages/henshusha/dist/index.js validate projects/short-clip
-# expected: Valid timeline: projects/short-clip/timelines/main.timeline.json
+# expected on POSIX: Valid timeline: projects/short-clip/timelines/main.timeline.json
 ```
 
-Both commands must exit with status 0 and print the shown `Valid timeline:` line. A missing `dist/index.js` may indicate that `pnpm build` was skipped or failed; `ENOENT` for a timeline path may indicate that the fixture was not regenerated with `pnpm dev:fixture -- --force`; any other validation error may indicate a malformed fixture timeline. Check the reported path and error to identify the underlying issue. The fixture is a stable sandbox for checking the expected workspace layout before publishing a starter change. The dry-run command writes `projects/sample-video/jobs/render-plan.json` without requiring FFmpeg. The Remotion props command writes `projects/sample-video/remotion/timeline-props.json`.
+Both commands must exit with status 0 and print the corresponding `Valid timeline:` line. Path separators follow the host platform; Windows uses backslashes. A missing `dist/index.js` may indicate that `pnpm build` was skipped or failed; `ENOENT` for a timeline path may indicate that the fixture was not regenerated with `pnpm dev:fixture -- --force`; any other validation error may indicate a malformed fixture timeline. Check the reported path and error to identify the underlying issue. The fixture is a stable sandbox for checking the expected workspace layout before publishing a starter change. The dry-run command writes `projects/sample-video/jobs/render-plan.json` without requiring FFmpeg. The Remotion props command writes `projects/sample-video/remotion/timeline-props.json`.
 
 ### 日本語の検証シナリオ（multi-project fixture）
 
@@ -71,7 +73,7 @@ Both commands must exit with status 0 and print the shown `Valid timeline:` line
   node ../../packages/henshusha/dist/index.js validate projects/sample-video
   node ../../packages/henshusha/dist/index.js validate projects/short-clip
   ```
-- **期待結果:** 2つの `validate` がいずれも終了コード `0` で完了し、順に `Valid timeline: projects/sample-video/timelines/main.timeline.json` と `Valid timeline: projects/short-clip/timelines/main.timeline.json` を出力する。
+- **期待結果:** 2つの `validate` がいずれも終了コード `0` で完了し、順に `Valid timeline: projects/sample-video/timelines/main.timeline.json` と `Valid timeline: projects/short-clip/timelines/main.timeline.json` を出力する。パス区切りはホスト環境に従い、Windows ではバックスラッシュを使用する。
 - **検証コマンド:** 上記のコマンド列全体。ドキュメントのスクリプト記載だけを確認する場合は `pnpm test:dev-script-docs` を実行する。
 - **失敗パターン:** `dist/index.js` がない場合は `pnpm build` の失敗または未実行、timeline の `ENOENT` は `pnpm dev:fixture -- --force` の未実行を確認する。それ以外の validation error は fixture の timeline 内容を確認する。`pnpm install` の失敗は Node/pnpm のバージョンと lockfile の整合性を確認する。
 
