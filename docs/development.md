@@ -57,6 +57,22 @@ node ../../packages/henshusha/dist/index.js validate projects/short-clip
 
 Both commands must exit with status 0 and print the shown `Valid timeline:` line. A missing `dist/index.js` means `pnpm build` was skipped or failed; `ENOENT` for a timeline path means the fixture was not regenerated with `pnpm dev:fixture -- --force`; any other validation error indicates a malformed fixture timeline. The fixture is a stable sandbox for checking the expected workspace layout before publishing a starter change. The dry-run command writes `projects/sample-video/jobs/render-plan.json` without requiring FFmpeg. The Remotion props command writes `projects/sample-video/remotion/timeline-props.json`.
 
+### 日本語の検証シナリオ（multi-project fixture）
+
+- **検証シナリオ:** クリーン checkout で依存関係を導入し、ビルド済み CLI から `sample-video` と `short-clip` の両プロジェクトを検証する（FFmpeg や publish 設定は不要）。
+- **操作手順:** リポジトリのルートで次を順に実行する。
+  ```bash
+  pnpm install
+  pnpm build
+  pnpm dev:fixture -- --force
+  cd .fixtures/basic-workspace
+  node ../../packages/henshusha/dist/index.js validate projects/sample-video
+  node ../../packages/henshusha/dist/index.js validate projects/short-clip
+  ```
+- **期待結果:** 2つの `validate` がいずれも終了コード `0` で完了し、順に `Valid timeline: projects/sample-video/timelines/main.timeline.json` と `Valid timeline: projects/short-clip/timelines/main.timeline.json` を出力する。
+- **検証コマンド:** 上記のコマンド列全体。ドキュメントのスクリプト記載だけを確認する場合は `pnpm test:dev-script-docs` を実行する。
+- **失敗パターン:** `dist/index.js` がない場合は `pnpm build` の失敗または未実行、timeline の `ENOENT` は `pnpm dev:fixture -- --force` の未実行を確認する。それ以外の validation error は fixture の timeline 内容を確認する。`pnpm install` の失敗は Node/pnpm のバージョンと lockfile の整合性を確認する。
+
 See [`render-verification.md`](render-verification.md) for the full FFmpeg smoke-test workflow.
 
 Embedded init manual QA (checkbox TUI, manifest rerun): [`embedded-init-qa.md`](embedded-init-qa.md).
