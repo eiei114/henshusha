@@ -59,19 +59,43 @@ Both commands must exit with status 0 and print the shown `Valid timeline:` line
 
 ### 日本語の検証シナリオ（multi-project fixture）
 
-- **検証シナリオ:** クリーン checkout で依存関係を導入し、ビルド済み CLI から `sample-video` と `short-clip` の両プロジェクトを検証する（FFmpeg や publish 設定は不要）。
-- **操作手順:** リポジトリのルートで次を順に実行する。
-  ```bash
-  pnpm install
-  pnpm build
-  pnpm dev:fixture -- --force
-  cd .fixtures/basic-workspace
-  node ../../packages/henshusha/dist/index.js validate projects/sample-video
-  node ../../packages/henshusha/dist/index.js validate projects/short-clip
-  ```
-- **期待結果:** 2つの `validate` がいずれも終了コード `0` で完了し、順に `Valid timeline: projects/sample-video/timelines/main.timeline.json` と `Valid timeline: projects/short-clip/timelines/main.timeline.json` を出力する。
-- **検証コマンド:** 上記のコマンド列全体。ドキュメントのスクリプト記載だけを確認する場合は `pnpm test:dev-script-docs` を実行する。
-- **失敗パターン:** `dist/index.js` がない場合は `pnpm build` の失敗または未実行、timeline の `ENOENT` は `pnpm dev:fixture -- --force` の未実行を確認する。それ以外の validation error は fixture の timeline 内容を確認する。`pnpm install` の失敗は Node/pnpm のバージョンと lockfile の整合性を確認する。
+#### 目的（検証シナリオ）
+
+クリーン checkout から fixture を再生成し、ビルド済み CLI で `sample-video` と `short-clip` の両プロジェクトを検証する。FFmpeg や publish 設定は不要。
+
+#### 前提条件
+
+- リポジトリのルートにいること。
+- Node.js（`package.json` の `engines.node` 以上）と pnpm（`packageManager` 記載版）が利用できること。
+- 手動確認に FFmpeg は不要。検証は以下の自動コマンドで完結する。
+
+#### 操作手順
+
+リポジトリのルートで次を順に実行する。
+
+```bash
+pnpm install
+pnpm build
+pnpm dev:fixture -- --force
+cd .fixtures/basic-workspace
+node ../../packages/henshusha/dist/index.js validate projects/sample-video
+node ../../packages/henshusha/dist/index.js validate projects/short-clip
+```
+
+#### 期待結果
+
+2つの `validate` がいずれも終了コード `0` で完了し、順に `Valid timeline: projects/sample-video/timelines/main.timeline.json` と `Valid timeline: projects/short-clip/timelines/main.timeline.json` を出力する。
+
+#### 検証コマンド
+
+上記のコマンド列全体が multi-project fixture の検証コマンドである。ドキュメントのスクリプト記載だけを確認する場合は、リポジトリのルートで `pnpm test:dev-script-docs` を実行し、`Dev script docs verification passed.` が出力されることを確認する。
+
+#### 失敗時の確認ポイント（失敗パターン）
+
+- `dist/index.js` がない場合は `pnpm build` の失敗または未実行を確認する。
+- timeline の `ENOENT` は `pnpm dev:fixture -- --force` の未実行を確認する。
+- `pnpm install` の失敗は Node/pnpm のバージョンと lockfile の整合性を確認する。
+- それ以外の validation error は fixture の timeline 内容を確認する。
 
 See [`render-verification.md`](render-verification.md) for the full FFmpeg smoke-test workflow.
 
