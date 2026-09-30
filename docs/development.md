@@ -63,8 +63,8 @@ Both commands must exit with status 0 and print the corresponding `Valid timelin
 
 ### 日本語の検証シナリオ（multi-project fixture）
 
-- **検証シナリオ:** クリーン checkout で依存関係を導入し、FFmpeg を利用できる状態で、ビルド済み CLI から `sample-video` と `short-clip` の両プロジェクトを検証する（publish 設定は不要）。
-- **操作手順:** リポジトリのルートで次を順に実行する。
+- **検証シナリオ:** クリーン checkout で依存関係を導入し、FFmpeg を `PATH` から利用できる状態で、ビルド済み CLI から `sample-video` と `short-clip` の両プロジェクトを検証する（publish 設定は不要）。
+- **操作手順:** リポジトリのルートで、次のコマンドを上から順に実行する。
   ```bash
   pnpm install
   pnpm build
@@ -73,9 +73,19 @@ Both commands must exit with status 0 and print the corresponding `Valid timelin
   node ../../packages/henshusha/dist/index.js validate projects/sample-video
   node ../../packages/henshusha/dist/index.js validate projects/short-clip
   ```
-- **期待結果:** 2つの `validate` がいずれも終了コード `0` で完了し、順に `Valid timeline: projects/sample-video/timelines/main.timeline.json` と `Valid timeline: projects/short-clip/timelines/main.timeline.json` を出力する。パス区切りはホスト環境に従い、Windows ではバックスラッシュを使用する。
-- **検証コマンド:** 上記のコマンド列全体。ドキュメントのスクリプト記載だけを確認する場合は `pnpm test:dev-script-docs` を実行する。
-- **失敗パターン:** `dist/index.js` がない場合は `pnpm build` の失敗または未実行、timeline の `ENOENT` は `pnpm dev:fixture -- --force` の未実行を確認する。それ以外の validation error は fixture の timeline 内容を確認する。`pnpm install` の失敗は Node/pnpm のバージョンと lockfile の整合性を確認する。
+- **コマンド別の期待結果と失敗時の確認ポイント:**
+  | コマンド | 期待結果 | 失敗時の確認ポイント |
+  | --- | --- | --- |
+  | `pnpm install` | 終了コード `0` で完了し、`pnpm-lock.yaml` に沿って依存関係を導入する。 | Node.js 20 以上、pnpm 9.15.9、ネットワーク、lockfile の変更有無を確認する。 |
+  | `pnpm build` | 終了コード `0` で完了し、`packages/henshusha/dist/index.js` が生成される。 | 最初の TypeScript/build エラーを確認し、`dist/index.js` がない場合はこのコマンドを再実行する。 |
+  | `pnpm dev:fixture -- --force` | 終了コード `0` で完了し、`.fixtures/basic-workspace` と両プロジェクトの timeline が生成される。 | FFmpeg が `PATH` にあるか、`pnpm build` が成功したか、fixture の生成エラーを確認する。 |
+  | `cd .fixtures/basic-workspace` | シェルの作業ディレクトリが fixture ルートになる。 | リポジトリのルートから実行したか、`.fixtures/basic-workspace` が存在するかを確認する。 |
+  | `node ../../packages/henshusha/dist/index.js validate projects/sample-video` | 終了コード `0` で `Valid timeline: projects/sample-video/timelines/main.timeline.json` を出力する。 | `dist/index.js` の生成、対象 timeline の存在、timeline JSON の内容を確認する。 |
+  | `node ../../packages/henshusha/dist/index.js validate projects/short-clip` | 終了コード `0` で `Valid timeline: projects/short-clip/timelines/main.timeline.json` を出力する。 | `pnpm dev:fixture -- --force` を再実行し、対象 timeline の存在と JSON の内容を確認する。 |
+
+  パス区切りはホスト環境に従い、Windows ではバックスラッシュを使用する。`ENOENT` は対象ファイルまたは fixture の生成漏れ、その他の validation error は報告された timeline JSON の不備を示す。
+- **検証コマンド:** fixture を実際に検証する場合は上記のコマンド列全体を実行する。ドキュメントのスクリプト記載だけを確認する場合は `pnpm test:dev-script-docs` を実行する。
+- **失敗パターン:** `pnpm test:dev-script-docs` の失敗は、Dogfood loop のコマンド記載と利用可能な script の不一致を示す。fixture 検証の失敗は、上表の該当コマンドの出力と最初のエラーメッセージから切り分ける。
 
 See [`render-verification.md`](render-verification.md) for the full FFmpeg smoke-test workflow.
 
