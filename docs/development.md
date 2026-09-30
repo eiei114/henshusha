@@ -44,6 +44,8 @@ ffprobe -hide_banner -show_streams projects/sample-video/renders/output.mp4
 
 The two `validate` commands are the multi-project fixture check. To run only this check from a clean checkout, use:
 
+Ensure `ffmpeg` is installed and available on `PATH`; `pnpm dev:fixture` generates the fixture input with FFmpeg.
+
 ```bash
 pnpm install
 pnpm build
@@ -55,11 +57,11 @@ node ../../packages/henshusha/dist/index.js validate projects/short-clip
 # expected: Valid timeline: projects/short-clip/timelines/main.timeline.json
 ```
 
-Both commands must exit with status 0 and print the shown `Valid timeline:` line. A missing `dist/index.js` means `pnpm build` was skipped or failed; `ENOENT` for a timeline path means the fixture was not regenerated with `pnpm dev:fixture -- --force`; any other validation error indicates a malformed fixture timeline. The fixture is a stable sandbox for checking the expected workspace layout before publishing a starter change. The dry-run command writes `projects/sample-video/jobs/render-plan.json` without requiring FFmpeg. The Remotion props command writes `projects/sample-video/remotion/timeline-props.json`.
+Both commands must exit with status 0 and print the shown `Valid timeline:` line. A missing `dist/index.js` may indicate that `pnpm build` was skipped or failed; `ENOENT` for a timeline path may indicate that the fixture was not regenerated with `pnpm dev:fixture -- --force`; any other validation error may indicate a malformed fixture timeline. Check the reported path and error to identify the underlying issue. The fixture is a stable sandbox for checking the expected workspace layout before publishing a starter change. The dry-run command writes `projects/sample-video/jobs/render-plan.json` without requiring FFmpeg. The Remotion props command writes `projects/sample-video/remotion/timeline-props.json`.
 
 ### 日本語の検証シナリオ（multi-project fixture）
 
-- **検証シナリオ:** クリーン checkout で依存関係を導入し、ビルド済み CLI から `sample-video` と `short-clip` の両プロジェクトを検証する（FFmpeg や publish 設定は不要）。
+- **検証シナリオ:** クリーン checkout で依存関係を導入し、FFmpeg を利用できる状態で、ビルド済み CLI から `sample-video` と `short-clip` の両プロジェクトを検証する（publish 設定は不要）。
 - **操作手順:** リポジトリのルートで次を順に実行する。
   ```bash
   pnpm install
