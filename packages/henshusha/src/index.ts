@@ -70,6 +70,21 @@ const AGENT_SKILL_DIRS: Record<AgentRuntime, string> = {
 
 const ALL_AGENT_RUNTIMES: AgentRuntime[] = ["claude", "codex", "pi"];
 
+type HenshushaSkillSource = { entry: string; sourcePath: string; hash: string };
+
+async function listHenshushaSkillSources(skillsSource: string): Promise<HenshushaSkillSource[]> {
+  const skills: HenshushaSkillSource[] = [];
+  for (const entry of await readdir(skillsSource)) {
+    if (!entry.startsWith("henshusha-")) continue;
+    const sourcePath = path.join(skillsSource, entry);
+    const info = await stat(sourcePath);
+    if (!info.isDirectory()) continue;
+    const hash = await hashSkillDirectory(sourcePath);
+    if (hash) skills.push({ entry, sourcePath, hash });
+  }
+  return skills;
+}
+
 type AgentSelection =
   | { mode: "all" }
   | { mode: "none" }
@@ -131,15 +146,10 @@ async function detectSkillCollisions(
   selection: AgentSelection
 ): Promise<SkillCollision[]> {
   const collisions: SkillCollision[] = [];
+  const skills = await listHenshushaSkillSources(skillsSource);
   for (const agent of selectedAgentRuntimes(selection)) {
     const runtimeSkillsDir = path.join(skillsRoot, AGENT_SKILL_DIRS[agent]);
-    for (const entry of await readdir(skillsSource)) {
-      if (!entry.startsWith("henshusha-")) continue;
-      const sourcePath = path.join(skillsSource, entry);
-      const info = await stat(sourcePath);
-      if (!info.isDirectory()) continue;
-      const desiredHash = await hashSkillDirectory(sourcePath);
-      if (!desiredHash) continue;
+    for (const { entry, hash: desiredHash } of skills) {
       const targetPath = path.join(runtimeSkillsDir, entry);
       if (!(await exists(path.join(targetPath, "SKILL.md")))) continue;
       const existingHash = await hashSkillDirectory(targetPath);
@@ -160,13 +170,7 @@ async function copyHenshushaSkills(
 ): Promise<ManifestSkillRecord[]> {
   const installed: ManifestSkillRecord[] = [];
   await mkdir(runtimeSkillsDir, { recursive: true });
-  for (const entry of await readdir(skillsSource)) {
-    if (!entry.startsWith("henshusha-")) continue;
-    const sourcePath = path.join(skillsSource, entry);
-    const info = await stat(sourcePath);
-    if (!info.isDirectory()) continue;
-    const desiredHash = await hashSkillDirectory(sourcePath);
-    if (!desiredHash) continue;
+  for (const { entry, sourcePath, hash: desiredHash } of await listHenshushaSkillSources(skillsSource)) {
     const targetPath = path.join(runtimeSkillsDir, entry);
     const relativePath = normalizePathForPackageJson(path.relative(skillsRoot, targetPath));
     let overwrite = false;
