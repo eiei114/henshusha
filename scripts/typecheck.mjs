@@ -1,42 +1,17 @@
 #!/usr/bin/env node
-import { readdir } from "node:fs/promises";
-import { spawn } from "node:child_process";
 import path from "node:path";
+import { getTypeScriptPackageOrder, runTypeScript } from "./package-build.mjs";
 
 const root = process.cwd();
 const packagesDir = path.join(root, "packages");
-const packageNames = (await readdir(packagesDir)).sort();
-const typecheckOrder = ["timeline", ...packageNames.filter((name) => name !== "timeline")];
+const typecheckOrder = await getTypeScriptPackageOrder(packagesDir);
 const tscBin = path.join(root, "node_modules", "typescript", "bin", "tsc");
-
-async function runTsc(packageName, noEmit) {
-  const tsconfig = path.join(packagesDir, packageName, "tsconfig.json");
-  const args = [tscBin, "-p", tsconfig];
-  if (noEmit) args.push("--noEmit");
-  await new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, args, {
-      stdio: "inherit",
-      shell: false
-    });
-    child.on("exit", (code) => {
-      if (code === 0) {
-        resolve(undefined);
-      } else {
-        reject(new Error(`typecheck failed for ${packageName} with exit code ${code}`));
-      }
-    });
-    child.on("error", reject);
-  });
-}
+const runTypecheck = (packageName) =>
+  runTypeScript({ packageName, packagesDir, tscBin, operation: "typecheck", noEmit: true });
 
 console.log("build timeline (typecheck prerequisite)");
-await runTsc("timeline", false);
+await runTypeScript({ packageName: "timeline", packagesDir, tscBin, operation: "build", noEmit: false });
 
-const typecheckResults = await Promise.allSettled(
-  typecheckOrder.map(async (packageName) => {
-    console.log(`typecheck ${packageName}`);
-    await runTsc(packageName, true);
-  })
-);
+const typecheckResults = await Promise.allSettled(typecheckOrder.map(runTypecheck));
 const failedTypecheck = typecheckResults.find((result) => result.status === "rejected");
 if (failedTypecheck) throw failedTypecheck.reason;
