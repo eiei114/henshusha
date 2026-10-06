@@ -1,37 +1,17 @@
 #!/usr/bin/env node
-import { cp, readdir, readFile, writeFile } from "node:fs/promises";
-import { spawn } from "node:child_process";
+import { cp, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { getTypeScriptPackageOrder, runTypeScript } from "./package-build.mjs";
 
 const root = process.cwd();
 const packagesDir = path.join(root, "packages");
 const tscBin = path.join(root, "node_modules", "typescript", "bin", "tsc");
-const packageNames = (await readdir(packagesDir)).sort();
-const buildOrder = ["timeline", ...packageNames.filter((name) => name !== "timeline")];
+const buildOrder = await getTypeScriptPackageOrder(packagesDir);
+const runBuild = (packageName) =>
+  runTypeScript({ packageName, packagesDir, tscBin, operation: "build", noEmit: false });
 
-async function runTsc(packageName) {
-  const tsconfig = path.join(packagesDir, packageName, "tsconfig.json");
-  console.log(`build ${packageName}`);
-  await new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [tscBin, "-p", tsconfig], {
-      stdio: "inherit",
-      shell: false
-    });
-    child.on("exit", (code) => {
-      if (code === 0) {
-        resolve(undefined);
-      } else {
-        reject(new Error(`build failed for ${packageName} with exit code ${code}`));
-      }
-    });
-    child.on("error", reject);
-  });
-}
-
-await runTsc("timeline");
-const buildResults = await Promise.allSettled(
-  buildOrder.slice(1).map((packageName) => runTsc(packageName))
-);
+await runBuild("timeline");
+const buildResults = await Promise.allSettled(buildOrder.slice(1).map(runBuild));
 const failedBuild = buildResults.find((result) => result.status === "rejected");
 if (failedBuild) throw failedBuild.reason;
 
