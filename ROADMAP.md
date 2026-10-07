@@ -63,6 +63,18 @@ file is the single source of truth for status and seeds.
 
 ---
 
+## Roadmap review — 2026-W41
+
+The roadmap source is present and has been refreshed against the current `main` branch
+(release `0.5.0`). The next bounded maintenance candidates are:
+
+1. **S1** — Sync README "Status" with shipped reality.
+2. **S2** — Reconcile `docs/roadmap.md` with shipped milestones.
+3. **S3** — Label stub packages in their READMEs.
+
+These candidates are already recorded in the maintenance backlog below; no
+implementation or release action is part of this roadmap refresh.
+
 ## Short-term direction (next 2–3 releases)
 
 These are candidate themes for the maintainer to sequence. Each should land as
