@@ -53,4 +53,4 @@ Other workspace packages under `packages/*` may remain at `0.0.0` while they are
 
 ## Release notes
 
-For `henshusha`, bump `packages/henshusha/package.json` before merging release changes. CI publishes only when that version is new on npm, then creates tag `v<version>`. Publishing uses npm Trusted Publishing/OIDC with Node 24 plus `npm publish --provenance --access public`; do not add `NPM_TOKEN` secrets.
+For `henshusha`, bump `packages/henshusha/package.json` before merging release changes. After the change reaches `main`, an authorized maintainer must manually run the `Publish henshusha` workflow and explicitly confirm the release; ordinary pushes and PR merges never publish, tag, or create a GitHub release. The workflow publishes only when that version is new on npm, then creates tag `v<version>`. Publishing uses npm Trusted Publishing/OIDC with Node 24 plus `npm publish --provenance --access public`; do not add `NPM_TOKEN` secrets.

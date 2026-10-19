@@ -18,6 +18,7 @@
     "test:dev-script-docs": "node scripts/verify-dev-script-docs.mjs",
     "test:ci-docs": "node scripts/verify-ci-docs.mjs",
     "test:version-policy-docs": "node scripts/verify-version-policy-docs.mjs",
+    "test:publish-workflow": "node scripts/verify-publish-workflow.mjs",
     "test:examples": "node scripts/build.mjs && node scripts/verify-examples.mjs",
     "dev:verify-render": "node scripts/verify-render.mjs",
     "lint": "node scripts/typecheck.mjs",
