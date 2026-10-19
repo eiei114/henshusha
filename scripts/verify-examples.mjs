@@ -35,6 +35,15 @@ for (const needle of [
   assert(basicReadme.includes(needle), `examples/basic/README.md must mention ${needle}`);
 }
 
+const packagedTemplateReadme = readFileSync(
+  path.join(repoRoot, "packages/henshusha/templates/basic/README.md"),
+  "utf8"
+);
+assert(
+  packagedTemplateReadme.includes("npx henshusha@latest my-studio"),
+  "packages/henshusha/templates/basic/README.md must use npx henshusha@latest my-studio"
+);
+
 const workspaceReadme = readFileSync(
   path.join(repoRoot, "examples/basic-workspace/README.md"),
   "utf8"
