@@ -41,17 +41,20 @@ assert.equal(
 );
 
 const steps = publishJob.steps ?? [];
-const publishStep = steps.find((step) => step.run?.includes("npm publish "));
-assert(publishStep, "The guarded release job must contain the npm publish command");
-assert.equal(
-  publishStep.if,
-  "steps.exists.outputs.exists == 'false'",
-  "npm publish must only run when the package version is not already published"
-);
-assert(
-  publishStep["continue-on-error"] === undefined || publishStep["continue-on-error"] === false,
-  "npm publish failures must fail the release job and stop later release steps"
-);
+const publishSteps = steps.filter((step) => step.run?.includes("npm publish "));
+assert(publishSteps.length > 0, "The guarded release job must contain the npm publish command");
+for (const [index, publishStep] of publishSteps.entries()) {
+  const stepLabel = `npm publish step ${index + 1}`;
+  assert.equal(
+    publishStep.if,
+    "steps.exists.outputs.exists == 'false'",
+    `${stepLabel} must only run when the package version is not already published`
+  );
+  assert(
+    publishStep["continue-on-error"] === undefined || publishStep["continue-on-error"] === false,
+    `${stepLabel} failures must fail the release job and stop later release steps`
+  );
+}
 
 assert(
   steps.some((step) => step.name === "Create version tag" && step.run?.includes('git push origin "$TAG"')),
