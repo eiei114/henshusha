@@ -76,6 +76,9 @@ jobs:
       - name: Version policy docs regression
         run: pnpm test:version-policy-docs
 
+      - name: Publish workflow safety regression
+        run: pnpm test:publish-workflow
+
       - name: Examples regression
         run: pnpm test:examples
 

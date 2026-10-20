@@ -105,7 +105,7 @@ The repository keeps scripts package-manager neutral where practical. `pnpm` rem
 
 ## Publishing
 
-`henshusha` publishes from GitHub Actions when a push to `main` contains a package version that does not already exist on npm.
+`henshusha` publishes through a human-triggered GitHub Actions release from `main`. Pushes and PR merges do not start the publishing workflow.
 
 Publishing uses npm Trusted Publishing (GitHub Actions OIDC), not a long-lived `NPM_TOKEN` secret. Configure npm package settings for `henshusha` with:
 
@@ -120,7 +120,8 @@ Release flow:
 
 1. Update `packages/henshusha/package.json` version.
 2. Merge to `main`.
-3. CI builds with pnpm and Bun, runs scaffold smoke tests, publishes to npm via trusted publishing, verifies both `npx henshusha@<version>` and `bunx henshusha@<version>`, then pushes tag `v<version>`.
+3. An authorized maintainer manually dispatches `Publish henshusha` on `main` and checks the required `confirm_release` approval (unchecked by default).
+4. The workflow builds with pnpm and Bun, runs scaffold smoke tests, publishes to npm via trusted publishing, verifies both `npx henshusha@<version>` and `bunx henshusha@<version>`, then pushes tag `v<version>` and creates the GitHub release.
 
 If the version already exists, CI skips publishing and tag creation instead of failing.
 
