@@ -26,7 +26,14 @@ assert.equal(approval?.type, "boolean", "Manual dispatch must request an explici
 assert.equal(approval?.required, true, "Release approval must be required for manual dispatch");
 assert.equal(approval?.default, false, "Release approval must default to denied");
 
-const publishJob = workflow.jobs?.publish;
+const jobs = workflow.jobs ?? {};
+assert.equal(
+  Object.keys(jobs).length,
+  1,
+  "All publishing, tagging, and release operations must remain in the single guarded job"
+);
+
+const publishJob = jobs.publish;
 assert.equal(
   publishJob?.if,
   "github.ref == 'refs/heads/main' && inputs.confirm_release",
@@ -34,10 +41,18 @@ assert.equal(
 );
 
 const steps = publishJob.steps ?? [];
-assert(
-  steps.some((step) => step.run?.includes("npm publish ")),
-  "The guarded release job must contain the npm publish command"
+const publishStep = steps.find((step) => step.run?.includes("npm publish "));
+assert(publishStep, "The guarded release job must contain the npm publish command");
+assert.equal(
+  publishStep.if,
+  "steps.exists.outputs.exists == 'false'",
+  "npm publish must only run when the package version is not already published"
 );
+assert(
+  publishStep["continue-on-error"] === undefined || publishStep["continue-on-error"] === false,
+  "npm publish failures must fail the release job and stop later release steps"
+);
+
 assert(
   steps.some((step) => step.name === "Create version tag" && step.run?.includes('git push origin "$TAG"')),
   "The guarded release job must contain the version tag push"
