@@ -27,3 +27,12 @@ export async function runTypeScript({ packageName, packagesDir, tscBin, noEmit, 
     child.on("error", reject);
   });
 }
+
+// Wait for every package task before propagating the first package-order failure.
+export async function runTypeScriptPackages(packageNames, runPackage) {
+  const results = await Promise.allSettled(
+    packageNames.map((packageName) => runPackage(packageName))
+  );
+  const failedPackage = results.find((result) => result.status === "rejected");
+  if (failedPackage) throw failedPackage.reason;
+}

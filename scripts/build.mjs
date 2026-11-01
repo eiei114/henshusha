@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { cp, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { getTypeScriptPackageOrder, runTypeScript } from "./package-build.mjs";
+import { getTypeScriptPackageOrder, runTypeScript, runTypeScriptPackages } from "./package-build.mjs";
 
 const root = process.cwd();
 const packagesDir = path.join(root, "packages");
@@ -11,9 +11,7 @@ const runBuild = (packageName) =>
   runTypeScript({ packageName, packagesDir, tscBin, operation: "build", noEmit: false });
 
 await runBuild("timeline");
-const buildResults = await Promise.allSettled(buildOrder.slice(1).map(runBuild));
-const failedBuild = buildResults.find((result) => result.status === "rejected");
-if (failedBuild) throw failedBuild.reason;
+await runTypeScriptPackages(buildOrder.slice(1), runBuild);
 
 const timelineDist = path.join(packagesDir, "timeline", "dist");
 const vendorDist = path.join(packagesDir, "henshusha", "dist", "timeline");
