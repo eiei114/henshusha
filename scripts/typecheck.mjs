@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import path from "node:path";
-import { getTypeScriptPackageOrder, runTypeScript } from "./package-build.mjs";
+import { getTypeScriptPackageOrder, runTypeScript, runTypeScriptPackages } from "./package-build.mjs";
 
 const root = process.cwd();
 const packagesDir = path.join(root, "packages");
@@ -12,6 +12,4 @@ const runTypecheck = (packageName) =>
 console.log("build timeline (typecheck prerequisite)");
 await runTypeScript({ packageName: "timeline", packagesDir, tscBin, operation: "build", noEmit: false });
 
-const typecheckResults = await Promise.allSettled(typecheckOrder.map(runTypecheck));
-const failedTypecheck = typecheckResults.find((result) => result.status === "rejected");
-if (failedTypecheck) throw failedTypecheck.reason;
+await runTypeScriptPackages(typecheckOrder, runTypecheck);

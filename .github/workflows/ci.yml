@@ -64,6 +64,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Package build orchestration regression
+        run: pnpm test:package-build
+
       - name: Dependabot config regression
         run: pnpm test:dependabot-config
 
