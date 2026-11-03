@@ -20,7 +20,7 @@ assert(
   `examples/basic-workspace must pin an exact henshusha npm version, got ${exampleVersion ?? "missing"}`
 );
 
-const npmViewArgs = ["view", `henshusha@${exampleVersion}`, "version"];
+const npmViewArgs = ["view", "henshusha@latest", "version", "--json=false"];
 const npmView = spawnSync(
   process.platform === "win32" ? process.env.ComSpec || "cmd.exe" : "npm",
   process.platform === "win32"
@@ -36,8 +36,13 @@ const npmViewOutput = [
   .filter(Boolean)
   .join(" ");
 assert(
-  npmView.status === 0 && npmView.stdout.trim() === exampleVersion,
-  `examples/basic-workspace must pin a published henshusha version; npm view henshusha@${exampleVersion} version failed${npmViewOutput ? `: ${npmViewOutput}` : ""}`
+  npmView.status === 0 && npmView.stdout.trim(),
+  `Could not read the latest published henshusha version; npm view henshusha@latest version --json=false failed${npmViewOutput ? `: ${npmViewOutput}` : ""}`
+);
+const latestVersion = npmView.stdout.trim();
+assert(
+  exampleVersion === latestVersion,
+  `examples/basic-workspace must pin the latest published henshusha version ${latestVersion}, got ${exampleVersion}`
 );
 
 const basicReadme = readFileSync(path.join(repoRoot, "examples/basic/README.md"), "utf8");
