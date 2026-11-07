@@ -52,12 +52,13 @@ async function copyDirectoryContents(
   const skipNames = options?.skipNames ?? new Set<string>();
   const force = options?.force ?? false;
   await mkdir(destination, { recursive: true });
-  for (const entry of await readdir(source)) {
-    if (skipNames.has(entry)) continue;
-    const sourcePath = path.join(source, entry);
-    const destinationPath = path.join(destination, entry);
-    const info = await stat(sourcePath);
-    if (info.isDirectory()) await copyDirectoryContents(sourcePath, destinationPath, options);
+  for (const entry of await readdir(source, { withFileTypes: true })) {
+    if (skipNames.has(entry.name)) continue;
+    const sourcePath = path.join(source, entry.name);
+    const destinationPath = path.join(destination, entry.name);
+    const isDirectory = entry.isDirectory() ||
+      (entry.isSymbolicLink() && (await stat(sourcePath)).isDirectory());
+    if (isDirectory) await copyDirectoryContents(sourcePath, destinationPath, options);
     else await cp(sourcePath, destinationPath, { force, errorOnExist: false });
   }
 }

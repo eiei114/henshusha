@@ -35,7 +35,7 @@
     },
     "packages/henshusha": {
       "name": "henshusha",
-      "version": "0.1.0",
+      "version": "0.5.8",
       "bin": {
         "henshusha": "dist/index.js",
       },

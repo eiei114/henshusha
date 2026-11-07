@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- perf: avoid redundant metadata lookups while copying scaffold directories.
 - docs: use `henshusha@latest` in the packaged basic starter quickstart.
 
 ## [0.5.6] - 2026-09-27

@@ -11,17 +11,38 @@ function assert(condition, message) {
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
 
-const publishedVersion = JSON.parse(
-  readFileSync(path.join(repoRoot, "packages/henshusha/package.json"), "utf8")
-).version;
-assert(publishedVersion, "packages/henshusha/package.json must define version");
-
 const examplePackageJson = JSON.parse(
   readFileSync(path.join(repoRoot, "examples/basic-workspace/package.json"), "utf8")
 );
+const exampleVersion = examplePackageJson.devDependencies?.henshusha;
 assert(
-  examplePackageJson.devDependencies?.henshusha === publishedVersion,
-  `examples/basic-workspace must pin henshusha@${publishedVersion}, got ${examplePackageJson.devDependencies?.henshusha ?? "missing"}`
+  typeof exampleVersion === "string" && /^[0-9A-Za-z.+-]+$/.test(exampleVersion),
+  `examples/basic-workspace must pin an exact henshusha npm version, got ${exampleVersion ?? "missing"}`
+);
+
+const npmViewArgs = ["view", "henshusha@latest", "version", "--json=false"];
+const npmView = spawnSync(
+  process.platform === "win32" ? process.env.ComSpec || "cmd.exe" : "npm",
+  process.platform === "win32"
+    ? ["/d", "/s", "/c", `npm.cmd ${npmViewArgs.join(" ")}`]
+    : npmViewArgs,
+  { cwd: repoRoot, encoding: "utf8", timeout: 30_000 }
+);
+const npmViewOutput = [
+  npmView.error?.message,
+  npmView.stderr?.trim(),
+  npmView.stdout?.trim()
+]
+  .filter(Boolean)
+  .join(" ");
+assert(
+  npmView.status === 0 && npmView.stdout.trim(),
+  `Could not read the latest published henshusha version; npm view henshusha@latest version --json=false failed${npmViewOutput ? `: ${npmViewOutput}` : ""}`
+);
+const latestVersion = npmView.stdout.trim();
+assert(
+  exampleVersion === latestVersion,
+  `examples/basic-workspace must pin the latest published henshusha version ${latestVersion}, got ${exampleVersion}`
 );
 
 const basicReadme = readFileSync(path.join(repoRoot, "examples/basic/README.md"), "utf8");
