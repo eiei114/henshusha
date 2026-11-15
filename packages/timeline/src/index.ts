@@ -160,6 +160,39 @@ function validateVideoGapsAndOverlaps(
   }
 }
 
+function resolveItemSource(item: Record<string, unknown>, fallbackSource: string | undefined): string | undefined {
+  return isString(item.source) ? item.source : fallbackSource;
+}
+
+function validateVideoSources(
+  trackIndex: number,
+  items: unknown[],
+  fallbackSource: string | undefined,
+  warnings: string[]
+): void {
+  const resolved = items
+    .map((item, itemIndex) => ({ item, itemIndex }))
+    .filter((entry): entry is { item: Record<string, unknown>; itemIndex: number } => isRecord(entry.item))
+    .map((entry) => ({ itemIndex: entry.itemIndex, source: resolveItemSource(entry.item, fallbackSource) }))
+    .filter((entry): entry is { itemIndex: number; source: string } => isString(entry.source));
+
+  const first = resolved[0];
+  if (!first) return;
+
+  const differing = resolved.filter((entry) => entry.source !== first.source);
+  if (differing.length === 0) return;
+
+  const reportedSources = new Set<string>();
+  for (const entry of differing) {
+    if (reportedSources.has(entry.source)) continue;
+    reportedSources.add(entry.source);
+    const itemPath = path("timeline", "tracks", trackIndex, "items", entry.itemIndex);
+    warnings.push(
+      `${itemPath}: source "${entry.source}" differs from the first video source "${first.source}" — render currently uses only the first source for every segment, so this item will render from "${first.source}"; split the timeline per source or reuse one source`
+    );
+  }
+}
+
 export function validateTimeline(value: unknown): TimelineValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -190,6 +223,8 @@ export function validateTimeline(value: unknown): TimelineValidationResult {
   }
 
   validateTranscript(value.transcript, errors);
+
+  const fallbackSource = isRecord(value.source) && isString(value.source.path) ? value.source.path : undefined;
 
   if (!isRecord(value.timeline) || !Array.isArray(value.timeline.tracks)) {
     errors.push("timeline.tracks is required — add a timeline object with a tracks array");
@@ -259,6 +294,7 @@ export function validateTimeline(value: unknown): TimelineValidationResult {
 
       if (track.type === "video" && Array.isArray(track.items) && track.items.length > 0) {
         validateVideoGapsAndOverlaps(trackIndex, track.items, warnings);
+        validateVideoSources(trackIndex, track.items, fallbackSource, warnings);
       }
     }
 

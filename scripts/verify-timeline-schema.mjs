@@ -119,4 +119,125 @@ const transcriptTimeline = {
 const transcriptResult = validateTimeline(transcriptTimeline);
 assert(transcriptResult.ok, `transcript + manual caption should validate:\n${formatValidationReport(transcriptResult)}`);
 
+const singleSourceTimeline = {
+  version: "0.1",
+  source: { path: "sources/raw/input.mp4" },
+  timeline: {
+    tracks: [
+      {
+        id: "video",
+        type: "video",
+        items: [
+          { source: "sources/raw/input.mp4", start: 0, end: 2, sourceStart: 0 },
+          { source: "sources/raw/input.mp4", start: 2, end: 4, sourceStart: 2 }
+        ]
+      }
+    ]
+  },
+  render: {
+    variant: { aspect: "9:16", resolution: "1080x1920" }
+  }
+};
+const singleSourceResult = validateTimeline(singleSourceTimeline);
+assert(singleSourceResult.ok, `single-source timeline should validate:\n${formatValidationReport(singleSourceResult)}`);
+assert(
+  singleSourceResult.warnings.length === 0,
+  `single-source timeline should have no warnings, got:\n${singleSourceResult.warnings.join("\n")}`
+);
+
+const mixedSourceTimeline = {
+  version: "0.1",
+  source: { path: "sources/raw/first.mp4" },
+  timeline: {
+    tracks: [
+      {
+        id: "video",
+        type: "video",
+        items: [
+          { source: "sources/raw/first.mp4", start: 0, end: 2, sourceStart: 0 },
+          { source: "sources/raw/second.mp4", start: 2, end: 4, sourceStart: 2 }
+        ]
+      }
+    ]
+  },
+  render: {
+    variant: { aspect: "9:16", resolution: "1080x1920" }
+  }
+};
+const mixedSourceResult = validateTimeline(mixedSourceTimeline);
+assert(mixedSourceResult.ok, `mixed-source timeline should stay valid (warning only):\n${formatValidationReport(mixedSourceResult)}`);
+const mixedWarning = mixedSourceResult.warnings.find((warning) => warning.includes("sources/raw/second.mp4"));
+assert(mixedWarning, `expected mixed-source warning, got:\n${mixedSourceResult.warnings.join("\n")}`);
+assert(
+  mixedWarning.includes("timeline.tracks.0.items.1"),
+  `mixed-source warning should name the item path, got: ${mixedWarning}`
+);
+assert(
+  mixedWarning.includes("sources/raw/first.mp4"),
+  `mixed-source warning should name the first source, got: ${mixedWarning}`
+);
+assert(
+  mixedWarning.includes("only the first source"),
+  `mixed-source warning should state the single-source limitation, got: ${mixedWarning}`
+);
+assert(
+  !mixedSourceResult.warnings.some((warning) => warning.includes("gap") || warning.includes("overlap")),
+  `mixed-source timeline should not gain gap/overlap warnings, got:\n${mixedSourceResult.warnings.join("\n")}`
+);
+
+const fallbackSourceTimeline = {
+  version: "0.1",
+  source: { path: "sources/raw/input.mp4" },
+  timeline: {
+    tracks: [
+      {
+        id: "video",
+        type: "video",
+        items: [
+          { start: 0, end: 2, sourceStart: 0 },
+          { start: 2, end: 4, sourceStart: 2 }
+        ]
+      }
+    ]
+  },
+  render: {
+    variant: { aspect: "9:16", resolution: "1080x1920" }
+  }
+};
+const fallbackSourceResult = validateTimeline(fallbackSourceTimeline);
+assert(fallbackSourceResult.ok, `fallback-to-source.path timeline should validate:\n${formatValidationReport(fallbackSourceResult)}`);
+assert(
+  fallbackSourceResult.warnings.length === 0,
+  `fallback-to-source.path timeline should have no warnings, got:\n${fallbackSourceResult.warnings.join("\n")}`
+);
+
+const mixedSourceFallbackTimeline = {
+  version: "0.1",
+  source: { path: "sources/raw/fallback.mp4" },
+  timeline: {
+    tracks: [
+      {
+        id: "video",
+        type: "video",
+        items: [
+          { start: 0, end: 2, sourceStart: 0 },
+          { source: "sources/raw/override.mp4", start: 2, end: 4, sourceStart: 2 }
+        ]
+      }
+    ]
+  },
+  render: {
+    variant: { aspect: "9:16", resolution: "1080x1920" }
+  }
+};
+const mixedSourceFallbackResult = validateTimeline(mixedSourceFallbackTimeline);
+assert(
+  mixedSourceFallbackResult.ok,
+  `source.path fallback with a per-item override should stay valid:\n${formatValidationReport(mixedSourceFallbackResult)}`
+);
+assert(
+  mixedSourceFallbackResult.warnings.some((warning) => warning.includes("sources/raw/override.mp4")),
+  `per-item source override should warn against the source.path fallback, got:\n${mixedSourceFallbackResult.warnings.join("\n")}`
+);
+
 console.log("Timeline schema verification passed.");
