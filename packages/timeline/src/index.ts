@@ -295,6 +295,11 @@ export function validateTimeline(value: unknown): TimelineValidationResult {
       if (track.type === "video" && Array.isArray(track.items) && track.items.length > 0) {
         validateVideoGapsAndOverlaps(trackIndex, track.items, warnings);
         validateVideoSources(trackIndex, track.items, fallbackSource, warnings);
+        if (trackIndex !== videoTrackIndexes[0]) {
+          warnings.push(
+            `${trackPath}: render currently uses only the first video track (timeline.tracks.${videoTrackIndexes[0]}); items on this later video track are ignored`
+          );
+        }
       }
     }
 

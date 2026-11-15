@@ -240,4 +240,37 @@ assert(
   `per-item source override should warn against the source.path fallback, got:\n${mixedSourceFallbackResult.warnings.join("\n")}`
 );
 
+const multipleVideoTracksTimeline = {
+  version: "0.1",
+  timeline: {
+    tracks: [
+      {
+        id: "primary-video",
+        type: "video",
+        items: [{ source: "sources/raw/a.mp4", start: 0, end: 2, sourceStart: 0 }]
+      },
+      {
+        id: "secondary-video",
+        type: "video",
+        items: [{ source: "sources/raw/b.mp4", start: 0, end: 2, sourceStart: 0 }]
+      }
+    ]
+  },
+  render: {
+    variant: { aspect: "9:16", resolution: "1080x1920" }
+  }
+};
+const multipleVideoTracksResult = validateTimeline(multipleVideoTracksTimeline);
+assert(
+  multipleVideoTracksResult.ok,
+  `multiple video tracks should stay valid with a warning:\n${formatValidationReport(multipleVideoTracksResult)}`
+);
+assert(
+  multipleVideoTracksResult.warnings.length === 1 &&
+    multipleVideoTracksResult.warnings[0].includes("timeline.tracks.1") &&
+    multipleVideoTracksResult.warnings[0].includes("first video track") &&
+    multipleVideoTracksResult.warnings[0].includes("ignored"),
+  `later video track should be reported as ignored, got:\n${multipleVideoTracksResult.warnings.join("\n")}`
+);
+
 console.log("Timeline schema verification passed.");
