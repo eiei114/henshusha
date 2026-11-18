@@ -523,7 +523,7 @@ function ffmpegText(value: string): string {
   return value
     .replaceAll("\\", "\\\\")
     .replaceAll(":", "\\:")
-    .replaceAll("'", "\\'")
+    .replaceAll("'", "'\\''")
     .replaceAll("\n", "\\n");
 }
 
@@ -545,6 +545,7 @@ function drawText(item: TextItem, type: TrackType): string {
   const options = [
     ...(fontFile ? [`fontfile='${fontFile}'`] : []),
     `text='${ffmpegText(item.text)}'`,
+    `expansion=none`,
     `fontsize=${fontSize}`,
     "fontcolor=white",
     "box=1",

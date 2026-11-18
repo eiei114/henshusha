@@ -177,6 +177,29 @@ Example gap that validates but warns:
 
 Fix: set the second item `start` to `4`, or insert a video segment that covers `4–6`.
 
+## Special characters in caption text
+
+The FFmpeg drawtext filter used by Henshusha safely handles the following special characters in caption/title text, thanks to the escaping in `ffmpegText` and the `expansion=none` drawtext option:
+
+- **Apostrophe `'`**: Escaped using FFmpeg's close-and-reopen quote pattern `'\''` inside the single-quoted `text` value. For example, `It's here` produces `text='It'\''s here'`.
+- **Percent sign `%`**: Treated as literal text. The `expansion=none` drawtext option prevents `%{...}` expansion sequences from being interpreted.
+- **Colon `:`**: Escaped as `\:` because `:` separates options in FFmpeg filter syntax.
+- **Backslash `\\`**: Escaped as `\\\\` (double backslash) so FFmpeg receives a literal backslash.
+- **Newline `\n`**: Escaped as `\\n` in the filter string.
+
+**Unsupported characters** (will cause filtergraph errors if not handled):
+- None within the supported set above; all common natural language characters are supported.
+
+### Example
+
+A caption with `It's 50% off: {now}` produces a drawtext filter:
+
+```
+drawtext=text='It'\''s 50% off\: {now}':expansion=none:fontsize=54:fontcolor=white:box=1:boxcolor=black@0.45:boxborderw=28:x=(w-text_w)/2:y=h-(text_h*3):enable='between(t,0,5)'
+```
+
+The `expansion=none` option ensures `%` and `%{...}` are literal, and the `'\''` sequence safely includes the apostrophe.
+
 ## Future transcript-derived captions
 
 Whisper/ASR is deferred for the MVP. When added later, adapters should:
