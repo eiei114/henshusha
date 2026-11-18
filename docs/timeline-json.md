@@ -192,13 +192,13 @@ The FFmpeg drawtext filter used by Henshusha safely handles the following specia
 
 ### Example
 
-A caption with `It's 50% off: {now}` produces a drawtext filter:
+A caption with `It's 50% off: temp\{now}` produces a drawtext filter:
 
 ```
-drawtext=text='It'\''s 50% off\: {now}':expansion=none:fontsize=54:fontcolor=white:box=1:boxcolor=black@0.45:boxborderw=28:x=(w-text_w)/2:y=h-(text_h*3):enable='between(t,0,5)'
+drawtext=expansion=none:text='It'\''s 50% off\: temp\\{now}':fontsize=54:fontcolor=white:box=1:boxcolor=black@0.45:boxborderw=28:x=(w-text_w)/2:y=h-(text_h*3):enable='between(t,0,5)'
 ```
 
-The `expansion=none` option ensures `%` and `%{...}` are literal, and the `'\''` sequence safely includes the apostrophe.
+The `expansion=none` option precedes `text` so `%` and `%{...}` are literal; the `'\''` sequence safely includes the apostrophe.
 
 ## Future transcript-derived captions
 

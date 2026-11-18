@@ -21,7 +21,7 @@
     "test:version-policy-docs": "node scripts/verify-version-policy-docs.mjs",
     "test:publish-workflow": "node scripts/verify-publish-workflow.mjs",
     "test:examples": "node scripts/build.mjs && node scripts/verify-examples.mjs",
-    "test:drawtext-escaping": "node scripts/verify-drawtext-escaping.mjs",
+    "test:drawtext-escaping": "node scripts/build.mjs && node scripts/verify-drawtext-escaping.mjs",
     "dev:verify-render": "node scripts/verify-render.mjs",
     "lint": "node scripts/typecheck.mjs",
     "test": "node scripts/typecheck.mjs",

@@ -34,7 +34,7 @@ try {
   const timelinesDir = path.join(projectRoot, "timelines");
   mkdirSync(timelinesDir, { recursive: true });
 
-  // Timeline with required special characters in caption text: apostrophe, percent, colon.
+  // Timeline with required special characters in caption text: apostrophe, percent, colon, backslash.
   // A minimal video track is required so render dry-run can build a plan.
   const timeline = {
     version: "0.1",
@@ -61,7 +61,7 @@ try {
             {
               start: 0,
               end: 5,
-              text: "It's 50% off: {now}"
+              text: "It's 50% off: C:\\temp\\{now}"
             }
           ]
         }
@@ -89,13 +89,18 @@ try {
   console.log("command:", command);
 
   assert(filterComplex.includes("drawtext="), `expected drawtext in filter_complex, got: ${filterComplex}`);
-  assert(filterComplex.includes("expansion=none"), `drawtext filter must include expansion=none, got: ${filterComplex}`);
+  const drawtextFilter = filterComplex.slice(filterComplex.indexOf("drawtext="));
+  assert(drawtextFilter.includes("expansion=none"), `drawtext filter must include expansion=none, got: ${filterComplex}`);
+  assert(drawtextFilter.indexOf("expansion=none") < drawtextFilter.indexOf("text='"),
+    `expansion=none must precede text so FFmpeg treats percent signs literally, got: ${drawtextFilter}`);
   // Apostrophe escaped as close-reopen pattern '\\'' (issue-specified equivalent)
   assert(filterComplex.includes("It'\\''s"), `drawtext filter must use FFmpeg close-reopen apostrophe escape '\\'', got: ${filterComplex}`);
-  // Colon escaped and %/{now} kept literal with expansion=none
-  assert(filterComplex.includes("50% off\\: {now}"), `drawtext filter must escape colon and keep %/{now} literal, got: ${filterComplex}`);
+  // Colon and backslashes are escaped; %/{now} stays literal with expansion=none.
+  assert(filterComplex.includes("50% off\\: C\\:\\\\temp\\\\{now}"),
+    `drawtext filter must escape colon and backslashes while keeping percent text literal, got: ${filterComplex}`);
   // Full expected text value
-  assert(filterComplex.includes("text='It'\\''s 50% off\\: {now}'"), `expected escaped text value, got: ${filterComplex}`);
+  assert(filterComplex.includes("text='It'\\''s 50% off\\: C\\:\\\\temp\\\\{now}'"),
+    `expected escaped text value, got: ${filterComplex}`);
 
   console.log("verify-drawtext-escaping: ok");
 } finally {

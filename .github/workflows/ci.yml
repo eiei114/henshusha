@@ -90,3 +90,6 @@ jobs:
 
       - name: Henshusha CLI regression smoke
         run: pnpm test:henshusha
+
+      - name: Drawtext escaping regression
+        run: pnpm test:drawtext-escaping

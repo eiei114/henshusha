@@ -544,8 +544,9 @@ function drawText(item: TextItem, type: TrackType): string {
   const fontFile = defaultFontFile();
   const options = [
     ...(fontFile ? [`fontfile='${fontFile}'`] : []),
-    `text='${ffmpegText(item.text)}'`,
+    // Set expansion before text so FFmpeg treats percent signs as literal text.
     `expansion=none`,
+    `text='${ffmpegText(item.text)}'`,
     `fontsize=${fontSize}`,
     "fontcolor=white",
     "box=1",
