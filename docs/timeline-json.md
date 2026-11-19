@@ -177,6 +177,24 @@ Example gap that validates but warns:
 
 Fix: set the second item `start` to `4`, or insert a video segment that covers `4–6`.
 
+## Special characters in caption text
+
+Caption/title text is written as UTF-8 in `jobs/drawtext-text/overlay-<n>.txt` and passed to FFmpeg through drawtext's `textfile` option. This keeps user text out of the nested filtergraph quoting and option-parsing layers.
+
+- Apostrophes (`'`), percent signs (`%` and `%{...}`), colons (`:`), and backslashes (`\\`) are retained literally in the text file. `expansion=none` prevents drawtext from expanding percent sequences.
+- A JSON `\n` escape becomes an actual line feed when the timeline is read and is retained as a line break in the UTF-8 text file.
+- The FFmpeg command in `jobs/render-plan.json` uses text-file paths relative to the project root; its `ffmpeg.cwd` field shows the directory from which those paths resolve.
+
+### Example
+
+A caption with `It's 50% off: C:\\temp\\{now}` produces a drawtext filter similar to:
+
+```
+drawtext=expansion=none:textfile='jobs/drawtext-text/overlay-0.txt':fontsize=54:fontcolor=white:box=1:boxcolor=black@0.45:boxborderw=28:x=(w-text_w)/2:y=h-(text_h*3):enable='between(t,0,5)'
+```
+
+The sidecar contains the exact UTF-8 caption `It's 50% off: C:\\temp\\{now}`; `expansion=none` keeps `%{...}` literal. Newlines are stored as actual line feeds, not the two-character sequence `\\n`.
+
 ## Future transcript-derived captions
 
 Whisper/ASR is deferred for the MVP. When added later, adapters should:

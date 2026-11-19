@@ -519,20 +519,12 @@ function projectPath(projectRoot: string, relativePath: string): string {
   return path.isAbsolute(relativePath) ? relativePath : path.resolve(projectRoot, relativePath);
 }
 
-function ffmpegText(value: string): string {
-  return value
-    .replaceAll("\\", "\\\\")
-    .replaceAll(":", "\\:")
-    .replaceAll("'", "\\'")
-    .replaceAll("\n", "\\n");
-}
-
 function defaultFontFile(): string | undefined {
   if (process.platform !== "win32") return undefined;
   return "C\\:/Windows/Fonts/meiryo.ttc";
 }
 
-function drawText(item: TextItem, type: TrackType): string {
+function drawText(item: TextItem, type: TrackType, textFile: string): string {
   const preset = item.preset ?? (type === "title" ? "bold-center" : "bottom-caption");
   const isLowerThird = preset === "lower-third";
   const isQuoteCard = preset === "quote-card";
@@ -544,7 +536,10 @@ function drawText(item: TextItem, type: TrackType): string {
   const fontFile = defaultFontFile();
   const options = [
     ...(fontFile ? [`fontfile='${fontFile}'`] : []),
-    `text='${ffmpegText(item.text)}'`,
+    // Text is loaded from a UTF-8 sidecar so user characters never pass through
+    // the filtergraph's nested quote/escape parsers.
+    `expansion=none`,
+    `textfile='${textFile}'`,
     `fontsize=${fontSize}`,
     "fontcolor=white",
     "box=1",
@@ -595,7 +590,18 @@ async function probeHasAudio(mediaPath: string): Promise<boolean> {
   });
 }
 
-function buildFfmpegArgs(projectRoot: string, timeline: Timeline, output: string, hasAudio: boolean): string[] {
+async function writeOverlayTextFiles(projectRoot: string, timeline: Timeline): Promise<string[]> {
+  const items = textTracks(timeline).flatMap((track) => track.items as TextItem[]);
+  const directory = path.join(projectRoot, "jobs", "drawtext-text");
+  await mkdir(directory, { recursive: true });
+  return await Promise.all(items.map(async (item, index) => {
+    const fileName = `overlay-${index}.txt`;
+    await writeFile(path.join(directory, fileName), item.text, "utf8");
+    return path.posix.join("jobs", "drawtext-text", fileName);
+  }));
+}
+
+function buildFfmpegArgs(projectRoot: string, timeline: Timeline, output: string, hasAudio: boolean, textFiles: string[]): string[] {
   const items = videoTrack(timeline).items as VideoItem[];
   if (items.length === 0) throw new Error("video track must include at least one item");
   const firstItem = items[0];
@@ -622,7 +628,9 @@ function buildFfmpegArgs(projectRoot: string, timeline: Timeline, output: string
   for (const track of textTracks(timeline)) {
     for (const item of track.items as TextItem[]) {
       const next = `txt${overlay}`;
-      filters.push(`[${current}]${drawText(item, track.type)}[${next}]`);
+      const textFile = textFiles[overlay];
+      if (!textFile) throw new Error(`Missing drawtext sidecar for overlay ${overlay}`);
+      filters.push(`[${current}]${drawText(item, track.type, textFile)}[${next}]`);
       current = next;
       overlay += 1;
     }
@@ -633,9 +641,9 @@ function buildFfmpegArgs(projectRoot: string, timeline: Timeline, output: string
   return args;
 }
 
-async function runFfmpeg(args: string[]): Promise<void> {
+async function runFfmpeg(args: string[], cwd: string): Promise<void> {
   await new Promise<void>((resolve, reject) => {
-    const child = spawn("ffmpeg", args, { stdio: "inherit" });
+    const child = spawn("ffmpeg", args, { cwd, stdio: "inherit" });
     child.on("error", (error) => reject(new Error(`Failed to start ffmpeg. Is ffmpeg installed? ${error.message}`)));
     child.on("exit", (code) => code === 0 ? resolve() : reject(new Error(`ffmpeg exited with code ${code ?? "unknown"}`)));
   });
@@ -758,6 +766,7 @@ interface RenderPlan {
     executable: "ffmpeg";
     args: string[];
     command: string;
+    cwd: string;
     hasAudio: boolean;
   };
 }
@@ -820,6 +829,7 @@ function buildRenderPlan(projectRoot: string, timelinePath: string, timeline: Ti
       executable: "ffmpeg",
       args: ffmpegArgs,
       command: ["ffmpeg", ...ffmpegArgs].map(shellQuote).join(" "),
+      cwd: projectRoot,
       hasAudio
     }
   };
@@ -827,7 +837,8 @@ function buildRenderPlan(projectRoot: string, timelinePath: string, timeline: Ti
 
 async function writeRenderPlan(projectRoot: string, timelinePath: string, timeline: Timeline, output: string, planOutput?: string): Promise<string> {
   const hasAudio = await probeHasAudio(primarySourcePath(projectRoot, timeline));
-  const ffmpegArgs = buildFfmpegArgs(projectRoot, timeline, output, hasAudio);
+  const textFiles = await writeOverlayTextFiles(projectRoot, timeline);
+  const ffmpegArgs = buildFfmpegArgs(projectRoot, timeline, output, hasAudio, textFiles);
   const planPath = projectPath(projectRoot, planOutput ?? "jobs/render-plan.json");
   await mkdir(path.dirname(planPath), { recursive: true });
   await writeFile(planPath, `${JSON.stringify(buildRenderPlan(projectRoot, timelinePath, timeline, output, ffmpegArgs, hasAudio), null, 2)}\n`, "utf8");
@@ -880,7 +891,8 @@ async function renderProject(argv: string[]): Promise<void> {
   }
   await mkdir(path.dirname(output), { recursive: true });
   console.log(`Rendering ${path.relative(process.cwd(), timelinePath)} -> ${path.relative(process.cwd(), output)}`);
-  await runFfmpeg(buildFfmpegArgs(projectRoot, timeline, output, hasAudio));
+  const textFiles = await writeOverlayTextFiles(projectRoot, timeline);
+  await runFfmpeg(buildFfmpegArgs(projectRoot, timeline, output, hasAudio, textFiles), projectRoot);
   console.log(`Rendered: ${output}`);
 }
 
