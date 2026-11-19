@@ -179,26 +179,21 @@ Fix: set the second item `start` to `4`, or insert a video segment that covers `
 
 ## Special characters in caption text
 
-The FFmpeg drawtext filter used by Henshusha safely handles the following special characters in caption/title text, thanks to the escaping in `ffmpegText` and the `expansion=none` drawtext option:
+Caption/title text is written as UTF-8 in `jobs/drawtext-text/overlay-<n>.txt` and passed to FFmpeg through drawtext's `textfile` option. This keeps user text out of the nested filtergraph quoting and option-parsing layers.
 
-- **Apostrophe `'`**: Escaped using FFmpeg's close-and-reopen quote pattern `'\''` inside the single-quoted `text` value. For example, `It's here` produces `text='It'\''s here'`.
-- **Percent sign `%`**: Treated as literal text. The `expansion=none` drawtext option prevents `%{...}` expansion sequences from being interpreted.
-- **Colon `:`**: Escaped as `\:` because `:` separates options in FFmpeg filter syntax.
-- **Backslash `\\`**: Escaped as `\\\\` (double backslash) so FFmpeg receives a literal backslash.
-- **Newline `\n`**: Escaped as `\\n` in the filter string.
-
-**Unsupported characters** (will cause filtergraph errors if not handled):
-- None within the supported set above; all common natural language characters are supported.
+- Apostrophes (`'`), percent signs (`%` and `%{...}`), colons (`:`), and backslashes (`\\`) are retained literally in the text file. `expansion=none` prevents drawtext from expanding percent sequences.
+- A JSON `\n` escape becomes an actual line feed when the timeline is read and is retained as a line break in the UTF-8 text file.
+- The FFmpeg command in `jobs/render-plan.json` uses text-file paths relative to the project root; its `ffmpeg.cwd` field shows the directory from which those paths resolve.
 
 ### Example
 
-A caption with `It's 50% off: temp\{now}` produces a drawtext filter:
+A caption with `It's 50% off: C:\\temp\\{now}` produces a drawtext filter similar to:
 
 ```
-drawtext=expansion=none:text='It'\''s 50% off\: temp\\{now}':fontsize=54:fontcolor=white:box=1:boxcolor=black@0.45:boxborderw=28:x=(w-text_w)/2:y=h-(text_h*3):enable='between(t,0,5)'
+drawtext=expansion=none:textfile='jobs/drawtext-text/overlay-0.txt':fontsize=54:fontcolor=white:box=1:boxcolor=black@0.45:boxborderw=28:x=(w-text_w)/2:y=h-(text_h*3):enable='between(t,0,5)'
 ```
 
-The `expansion=none` option precedes `text` so `%` and `%{...}` are literal; the `'\''` sequence safely includes the apostrophe.
+The sidecar contains the exact UTF-8 caption `It's 50% off: C:\\temp\\{now}`; `expansion=none` keeps `%{...}` literal. Newlines are stored as actual line feeds, not the two-character sequence `\\n`.
 
 ## Future transcript-derived captions
 

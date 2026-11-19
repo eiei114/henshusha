@@ -22,6 +22,7 @@
     "test:publish-workflow": "node scripts/verify-publish-workflow.mjs",
     "test:examples": "node scripts/build.mjs && node scripts/verify-examples.mjs",
     "test:drawtext-escaping": "node scripts/build.mjs && node scripts/verify-drawtext-escaping.mjs",
+    "test:drawtext-escaping:ffmpeg": "node scripts/build.mjs && node scripts/verify-drawtext-escaping.mjs --ffmpeg",
     "dev:verify-render": "node scripts/verify-render.mjs",
     "lint": "node scripts/typecheck.mjs",
     "test": "node scripts/typecheck.mjs",
