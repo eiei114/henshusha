@@ -5,6 +5,8 @@ import path from "node:path";
 export type AgentRuntime = "claude" | "codex" | "pi";
 export type InstallMode = "standalone" | "embedded";
 
+const AGENT_RUNTIMES: readonly AgentRuntime[] = ["claude", "codex", "pi"];
+
 export interface ManifestSkillRecord {
   agent: AgentRuntime;
   skill: string;
@@ -37,12 +39,47 @@ export function manifestPath(skillsRoot: string): string {
   return path.join(skillsRoot, MANIFEST_RELATIVE_PATH);
 }
 
+function invalidManifest(target: string, detail: string): Error {
+  return new Error(
+    `Cannot reuse Henshusha install manifest at ${target}: ${detail}. ` +
+      "Restore a valid schema-v1 manifest or remove it before rerunning init."
+  );
+}
+
 export async function readInstallManifest(skillsRoot: string): Promise<InstallManifest | undefined> {
   const target = manifestPath(skillsRoot);
   if (!(await exists(target))) return undefined;
-  const parsed = JSON.parse(await readFile(target, "utf8")) as InstallManifest;
-  if (parsed.schemaVersion !== 1) return undefined;
-  return parsed;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(await readFile(target, "utf8"));
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw invalidManifest(target, `invalid JSON (${reason})`);
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw invalidManifest(target, "expected a JSON object");
+  }
+
+  const fields = parsed as Record<string, unknown>;
+  if (fields.schemaVersion !== 1) {
+    throw invalidManifest(
+      target,
+      `unsupported schemaVersion ${JSON.stringify(fields.schemaVersion)} (this CLI supports schemaVersion 1)`
+    );
+  }
+  if (!Array.isArray(fields.selectedAgents)) {
+    throw invalidManifest(target, "selectedAgents must be an array containing only claude, codex, or pi");
+  }
+  const invalidAgentIndex = fields.selectedAgents.findIndex(
+    (agent) => typeof agent !== "string" || !AGENT_RUNTIMES.includes(agent as AgentRuntime)
+  );
+  if (invalidAgentIndex !== -1) {
+    throw invalidManifest(
+      target,
+      `selectedAgents[${invalidAgentIndex}] is invalid (${JSON.stringify(fields.selectedAgents[invalidAgentIndex])}); expected claude, codex, or pi`
+    );
+  }
+  return parsed as InstallManifest;
 }
 
 export async function writeInstallManifest(skillsRoot: string, manifest: InstallManifest): Promise<void> {
