@@ -130,8 +130,8 @@ async function resolveInitAgentSelection(
   skillsRoot: string,
   options?: { dryRun?: boolean }
 ): Promise<AgentSelection> {
-  if (hasExplicitAgentFlags(argv)) return resolveAgentSelection(argv);
   const manifest = await readInstallManifest(skillsRoot);
+  if (hasExplicitAgentFlags(argv)) return resolveAgentSelection(argv);
   const defaults = manifest?.selectedAgents?.length ? manifest.selectedAgents : ALL_AGENT_RUNTIMES;
   if (!options?.dryRun && isInteractiveTerminal()) {
     const selected = await promptAgentCheckboxSelection(defaults);

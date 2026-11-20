@@ -1,5 +1,16 @@
 #!/usr/bin/env node
-import { copyFileSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readlinkSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync
+} from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -37,6 +48,49 @@ function assertCliSuccess(result, label) {
 
 function countOccurrences(haystack, needle) {
   return haystack.split(needle).length - 1;
+}
+
+function snapshotTree(root) {
+  const entries = [];
+  const visit = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      const target = path.join(directory, entry.name);
+      const relative = path.relative(root, target).split(path.sep).join("/");
+      if (entry.isDirectory()) {
+        entries.push(["directory", relative]);
+        visit(target);
+      } else if (entry.isSymbolicLink()) {
+        entries.push(["symlink", relative, readlinkSync(target)]);
+      } else {
+        entries.push(["file", relative, readFileSync(target).toString("base64")]);
+      }
+    }
+  };
+  visit(root);
+  return JSON.stringify(entries);
+}
+
+function assertInvalidManifestIsNonDestructive({ name, contents, diagnostic }) {
+  const repo = path.join(tmpRoot, name);
+  mkdirSync(path.join(repo, "projects", "existing-workspace"), { recursive: true });
+  mkdirSync(path.join(repo, ".henshusha"), { recursive: true });
+  mkdirSync(path.join(repo, ".pi", "skills", "custom-skill"), { recursive: true });
+  writeFileSync(path.join(repo, "package.json"), '{"name":"existing-workspace","scripts":{"validate":"keep-me"}}\n', "utf8");
+  writeFileSync(path.join(repo, "projects", "existing-workspace", "keep.txt"), "keep workspace data\n", "utf8");
+  writeFileSync(path.join(repo, ".pi", "skills", "custom-skill", "SKILL.md"), "# user-owned skill\n", "utf8");
+  const manifestPath = path.join(repo, ".henshusha", "manifest.json");
+  writeFileSync(manifestPath, contents, "utf8");
+  const gitInit = spawnSync("git", ["init", "--initial-branch=main"], { cwd: repo, encoding: "utf8" });
+  assert(gitInit.status === 0, `git init failed in ${name}\n${gitInit.stderr}`);
+
+  const before = snapshotTree(repo);
+  const result = runCli(symlinkPath, ["init", "--no-install"], repo);
+  assert(result.status !== 0, `${name} must reject the invalid install manifest`);
+  assert(!result.error, `${name} failed to launch\n${result.error?.message ?? "unknown error"}`);
+  const output = `${result.stdout}\n${result.stderr}`;
+  assert(diagnostic.test(output), `${name} should explain how to recover\n${output}`);
+  assert(snapshotTree(repo) === before, `${name} must leave workspace files and the existing manifest unchanged`);
+  assert(readFileSync(manifestPath, "utf8") === contents, `${name} must preserve the original manifest bytes`);
 }
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -318,6 +372,22 @@ try {
     existsSync(path.join(manifestRepo, ".pi", "skills", "henshusha-render", "SKILL.md")),
     "manifest rerun must keep Pi skills selected from manifest"
   );
+
+  assertInvalidManifestIsNonDestructive({
+    name: "malformed-manifest-repo",
+    contents: '{"schemaVersion":1,\n',
+    diagnostic: /invalid JSON.*schema-v1 manifest or remove it/i
+  });
+  assertInvalidManifestIsNonDestructive({
+    name: "unsupported-manifest-repo",
+    contents: `${JSON.stringify({ schemaVersion: 2, selectedAgents: ["pi"] })}\n`,
+    diagnostic: /unsupported schemaVersion 2.*schema-v1 manifest or remove it/i
+  });
+  assertInvalidManifestIsNonDestructive({
+    name: "invalid-agents-manifest-repo",
+    contents: `${JSON.stringify({ schemaVersion: 1, selectedAgents: ["not-a-runtime"] })}\n`,
+    diagnostic: /selectedAgents\[0\].*not-a-runtime.*schema-v1 manifest or remove it/i
+  });
 
   const idempotentRerun = runCli(symlinkPath, ["init", "--agents", "pi", "--no-install"], manifestRepo);
   assertCliSuccess(idempotentRerun, "henshusha init idempotent rerun with matching skills");
