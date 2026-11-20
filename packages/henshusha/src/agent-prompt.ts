@@ -8,6 +8,11 @@ export interface AgentPromptOption {
   targetDir: string;
 }
 
+export interface AgentPromptStreams {
+  input: NodeJS.ReadStream;
+  output: NodeJS.WriteStream;
+}
+
 const DEFAULT_OPTIONS: AgentPromptOption[] = [
   { runtime: "claude", label: "Claude Code", targetDir: ".claude/skills" },
   { runtime: "codex", label: "Codex", targetDir: ".codex/skills" },
@@ -29,18 +34,22 @@ function renderCheckboxPrompt(options: AgentPromptOption[], selected: Set<AgentR
   return lines.join("\n");
 }
 
-export async function promptAgentCheckboxSelection(defaults: AgentRuntime[]): Promise<AgentRuntime[]> {
-  if (!isInteractiveTerminal()) return [...new Set(defaults)];
+export async function promptAgentCheckboxSelection(
+  defaults: AgentRuntime[],
+  streams: AgentPromptStreams = { input, output }
+): Promise<AgentRuntime[]> {
+  const { input: promptInput, output: promptOutput } = streams;
+  if (!promptInput.isTTY || !promptOutput.isTTY) return [...new Set(defaults)];
 
   const options = DEFAULT_OPTIONS;
   const selected = new Set<AgentRuntime>(defaults);
   let cursor = 0;
 
-  readline.emitKeypressEvents(input);
-  if (input.isTTY) input.setRawMode(true);
+  readline.emitKeypressEvents(promptInput);
+  if (promptInput.isTTY) promptInput.setRawMode(true);
 
   const render = () => {
-    output.write(`\u001b[2J\u001b[H${renderCheckboxPrompt(options, selected, cursor)}`);
+    promptOutput.write(`\u001b[2J\u001b[H${renderCheckboxPrompt(options, selected, cursor)}`);
   };
 
   render();
@@ -71,11 +80,11 @@ export async function promptAgentCheckboxSelection(defaults: AgentRuntime[]): Pr
     };
 
     const cleanup = () => {
-      input.off("keypress", onKeypress);
-      if (input.isTTY) input.setRawMode(false);
-      output.write("\n");
+      promptInput.off("keypress", onKeypress);
+      if (promptInput.isTTY) promptInput.setRawMode(false);
+      promptOutput.write("\n");
     };
 
-    input.on("keypress", onKeypress);
+    promptInput.on("keypress", onKeypress);
   });
 }
