@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- fix: deduplicate repeated runtimes in a persisted install manifest's `selectedAgents` so reruns stay idempotent.
 - perf: avoid redundant metadata lookups while copying scaffold directories.
 - fix: warn when video items reference sources other than the first item's source, and document the single-source FFmpeg render limitation.
 - docs: use `henshusha@latest` in the packaged basic starter quickstart.
