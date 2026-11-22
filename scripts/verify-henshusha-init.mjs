@@ -392,6 +392,47 @@ try {
   const idempotentRerun = runCli(symlinkPath, ["init", "--agents", "pi", "--no-install"], manifestRepo);
   assertCliSuccess(idempotentRerun, "henshusha init idempotent rerun with matching skills");
 
+  const duplicateAgentsRepo = path.join(tmpRoot, "duplicate-agents-manifest-repo");
+  mkdirSync(duplicateAgentsRepo, { recursive: true });
+  writeFileSync(path.join(duplicateAgentsRepo, "package.json"), '{"name":"duplicate-agents"}\n', "utf8");
+  assert(spawnSync("git", ["init", "--initial-branch=main"], { cwd: duplicateAgentsRepo, encoding: "utf8" }).status === 0);
+  const duplicateSeed = runCli(symlinkPath, ["init", "--agents", "pi,claude", "--no-install"], duplicateAgentsRepo);
+  assertCliSuccess(duplicateSeed, "henshusha init duplicate-agents seed");
+  const duplicateManifestPath = path.join(duplicateAgentsRepo, ".henshusha", "manifest.json");
+  const duplicateManifest = JSON.parse(readFileSync(duplicateManifestPath, "utf8"));
+  duplicateManifest.selectedAgents = ["pi", "claude", "pi", "claude", "pi"];
+  duplicateManifest.skills = [];
+  writeFileSync(duplicateManifestPath, `${JSON.stringify(duplicateManifest, null, 2)}\n`, "utf8");
+  const duplicateRerun = runCli(symlinkPath, ["init", "--no-install"], duplicateAgentsRepo);
+  assertCliSuccess(duplicateRerun, "henshusha init duplicate-agents manifest rerun");
+  const dedupedManifest = JSON.parse(readFileSync(duplicateManifestPath, "utf8"));
+  assert(
+    JSON.stringify(dedupedManifest.selectedAgents) === JSON.stringify(["pi", "claude"]),
+    `duplicate persisted agents must be deduplicated in first-seen order, got ${JSON.stringify(dedupedManifest.selectedAgents)}`
+  );
+  const skillKeys = dedupedManifest.skills.map((record) => `${record.agent}/${record.skill}`);
+  assert(skillKeys.length > 0, "duplicate-agents rerun must record installed skills");
+  assert(new Set(skillKeys).size === skillKeys.length, "duplicate-agents rerun must not duplicate skill records");
+  assert(
+    existsSync(path.join(duplicateAgentsRepo, ".pi", "skills", "henshusha-render", "SKILL.md")) &&
+      existsSync(path.join(duplicateAgentsRepo, ".claude", "skills", "henshusha-render", "SKILL.md")),
+    "duplicate-agents rerun must keep skills for each selected runtime"
+  );
+
+  const emptyAgentsRepo = path.join(tmpRoot, "empty-agents-manifest-repo");
+  mkdirSync(emptyAgentsRepo, { recursive: true });
+  writeFileSync(path.join(emptyAgentsRepo, "package.json"), '{"name":"empty-agents"}\n', "utf8");
+  assert(spawnSync("git", ["init", "--initial-branch=main"], { cwd: emptyAgentsRepo, encoding: "utf8" }).status === 0);
+  const emptySeed = runCli(symlinkPath, ["init", "--no-skills", "--no-install"], emptyAgentsRepo);
+  assertCliSuccess(emptySeed, "henshusha init --no-skills seed");
+  const emptyManifest = JSON.parse(readFileSync(path.join(emptyAgentsRepo, ".henshusha", "manifest.json"), "utf8"));
+  assert(
+    Array.isArray(emptyManifest.selectedAgents) && emptyManifest.selectedAgents.length === 0,
+    "--no-skills must persist an empty selectedAgents list"
+  );
+  const emptyRerun = runCli(symlinkPath, ["init", "--no-skills", "--no-install"], emptyAgentsRepo);
+  assertCliSuccess(emptyRerun, "henshusha init --no-skills rerun over empty manifest");
+
   const nonTtyDefaultRepo = path.join(tmpRoot, "non-tty-default-repo");
   mkdirSync(nonTtyDefaultRepo, { recursive: true });
   writeFileSync(path.join(nonTtyDefaultRepo, "package.json"), '{"name":"non-tty-default"}\n', "utf8");
