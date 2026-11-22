@@ -79,7 +79,9 @@ export async function readInstallManifest(skillsRoot: string): Promise<InstallMa
       `selectedAgents[${invalidAgentIndex}] is invalid (${JSON.stringify(fields.selectedAgents[invalidAgentIndex])}); expected claude, codex, or pi`
     );
   }
-  return parsed as InstallManifest;
+  const manifest = parsed as InstallManifest;
+  manifest.selectedAgents = [...new Set(manifest.selectedAgents)];
+  return manifest;
 }
 
 export async function writeInstallManifest(skillsRoot: string, manifest: InstallManifest): Promise<void> {
