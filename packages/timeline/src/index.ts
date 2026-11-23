@@ -92,7 +92,12 @@ function path(prefix: string, ...parts: Array<string | number>): string {
 export function parseResolution(resolution: string): { width: number; height: number } {
   const match = /^(\d+)x(\d+)$/.exec(resolution);
   if (!match) throw new Error(`render.variant.resolution must match WIDTHxHEIGHT (e.g. "1080x1920"); got "${resolution}"`);
-  return { width: Number(match[1]), height: Number(match[2]) };
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  if (!Number.isSafeInteger(width) || width <= 0 || !Number.isSafeInteger(height) || height <= 0) {
+    throw new Error(`render.variant.resolution width and height must be positive safe integers; got "${resolution}"`);
+  }
+  return { width, height };
 }
 
 function validateTranscript(value: unknown, errors: string[]): void {
