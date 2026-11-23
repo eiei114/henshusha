@@ -27,6 +27,29 @@ const starterResult = validateTimeline(starter);
 assert(starterResult.ok, `starter timeline should validate:\n${formatValidationReport(starterResult)}`);
 assert(starterResult.warnings.length === 0, `starter timeline should have no gap warnings:\n${starterResult.warnings.join("\n")}`);
 
+function validateWithResolution(resolution) {
+  return validateTimeline({
+    ...starter,
+    render: { ...starter.render, variant: { ...starter.render.variant, resolution } }
+  });
+}
+
+const maxSafe = Number.MAX_SAFE_INTEGER;
+const unsafe = "9007199254740993";
+for (const resolution of ["0x1920", "1080x0", `${unsafe}x1080`, `1080x${unsafe}`]) {
+  const result = validateWithResolution(resolution);
+  assert(!result.ok, `invalid resolution ${resolution} should fail validation`);
+  assert(
+    result.errors.some((error) => error.startsWith("render.variant.resolution")),
+    `expected resolution error for ${resolution}, got:\n${formatValidationReport(result)}`
+  );
+}
+
+for (const resolution of ["1080x1920", "1920x1080", "1080x1080", `${maxSafe}x${maxSafe}`]) {
+  const result = validateWithResolution(resolution);
+  assert(result.ok, `resolution ${resolution} should validate:\n${formatValidationReport(result)}`);
+}
+
 const gapTimeline = {
   version: "0.1",
   timeline: {
