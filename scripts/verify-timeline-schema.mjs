@@ -168,6 +168,39 @@ assert(
   `single-source timeline should have no warnings, got:\n${singleSourceResult.warnings.join("\n")}`
 );
 
+function validateWithDuration(duration) {
+  return validateTimeline({
+    ...singleSourceTimeline,
+    timeline: { ...singleSourceTimeline.timeline, duration }
+  });
+}
+
+const matchingDuration = validateWithDuration(4);
+assert(
+  matchingDuration.ok && matchingDuration.warnings.length === 0,
+  `matching duration should validate without warnings:\n${formatValidationReport(matchingDuration)}`
+);
+
+for (const duration of [5, 0, -1]) {
+  const result = validateWithDuration(duration);
+  assert(
+    result.ok && result.warnings.some((warning) =>
+      warning.startsWith(`timeline.duration (${duration}) differs from last video item end (4)`)
+    ),
+    `differing finite duration ${duration} should only warn:\n${formatValidationReport(result)}`
+  );
+}
+
+for (const duration of ["4", null, undefined, NaN, Infinity, -Infinity]) {
+  const result = validateWithDuration(duration);
+  const label = `${typeof duration} ${String(duration)}`;
+  assert(
+    !result.ok && result.errors.some((error) => error.startsWith("timeline.duration ")),
+    `invalid duration ${label} should produce a timeline.duration error:\n${formatValidationReport(result)}`
+  );
+  assert(result.warnings.length === 0, `invalid duration ${label} should not trigger a mismatch warning`);
+}
+
 const mixedSourceTimeline = {
   version: "0.1",
   source: { path: "sources/raw/first.mp4" },

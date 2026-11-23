@@ -142,7 +142,7 @@ Implications:
 
 - **Gaps** (for example, an item starts at `6` after the previous item ends at `4`): validation warns that the gap is ignored. Output duration equals the sum of segment lengths, not the last `end` timestamp.
 - **Overlaps** (an item starts before the previous item ends): validation warns that segments still play sequentially; overlapping source ranges are not blended.
-- **`timeline.duration`**: informational. FFmpeg uses concatenated segment lengths. A warning appears when `duration` differs from the last video item `end`.
+- **`timeline.duration`**: optional and informational. If present, it must be a finite number. FFmpeg uses concatenated segment lengths. A warning appears when `duration` differs from the last video item `end`.
 - **Mixed sources**: the renderer opens a single input — the first video item's `source` (falling back to `source.path`) — and trims every segment from that input. Per-item `source` values are accepted by the schema so a future renderer can honor them, but the current FFmpeg renderer ignores them for every item after the first. Validation warns when video items resolve to more than one distinct source, naming the item path, the item source, and the first source.
 
   Only one source is current-render-safe. Split a multi-source edit into one timeline per source, or point every item at the same file (`sourceStart` can still differ).

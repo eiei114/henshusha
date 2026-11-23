@@ -231,6 +231,10 @@ export function validateTimeline(value: unknown): TimelineValidationResult {
 
   const fallbackSource = isRecord(value.source) && isString(value.source.path) ? value.source.path : undefined;
 
+  if (isRecord(value.timeline) && "duration" in value.timeline && !isNumber(value.timeline.duration)) {
+    errors.push("timeline.duration must be a finite number");
+  }
+
   if (!isRecord(value.timeline) || !Array.isArray(value.timeline.tracks)) {
     errors.push("timeline.tracks is required — add a timeline object with a tracks array");
   } else {
