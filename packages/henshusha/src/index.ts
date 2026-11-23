@@ -854,6 +854,11 @@ function timelineDurationSeconds(timeline: Timeline): number {
 
 function buildRemotionProps(projectRoot: string, timelinePath: string, timeline: Timeline, fps: number): RemotionTimelineProps {
   const { width, height } = parseResolution(timeline.render.variant.resolution);
+  const duration = timelineDurationSeconds(timeline);
+  const durationInFrames = Math.ceil(duration * fps);
+  if (!Number.isSafeInteger(durationInFrames) || durationInFrames <= 0) {
+    throw new Error(`Remotion frame count must be a positive safe integer (duration ${duration} seconds, FPS ${fps})`);
+  }
   return {
     schemaVersion: 1,
     kind: "henshusha.remotion-props",
@@ -863,15 +868,16 @@ function buildRemotionProps(projectRoot: string, timelinePath: string, timeline:
     fps,
     width,
     height,
-    durationInFrames: Math.ceil(timelineDurationSeconds(timeline) * fps),
+    durationInFrames,
     timeline
   };
 }
 
 async function writeRemotionProps(projectRoot: string, timelinePath: string, timeline: Timeline, output?: string, fps = 30): Promise<string> {
   const propsPath = projectPath(projectRoot, output ?? "remotion/timeline-props.json");
+  const props = buildRemotionProps(projectRoot, timelinePath, timeline, fps);
   await mkdir(path.dirname(propsPath), { recursive: true });
-  await writeFile(propsPath, `${JSON.stringify(buildRemotionProps(projectRoot, timelinePath, timeline, fps), null, 2)}\n`, "utf8");
+  await writeFile(propsPath, `${JSON.stringify(props, null, 2)}\n`, "utf8");
   return propsPath;
 }
 
