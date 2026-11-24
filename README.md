@@ -69,6 +69,8 @@ my-studio/
 
 The first starter is biased toward manual timeline editing: human edit plan, explicit cuts, midway titles, large Japanese captions, 9:16 output, and Remotion text template components for richer captions/titles.
 
+For `validate`, `render`, and `remotion-props`, the CLI uses `--timeline` if provided, then tries `timelines/main.timeline.json` and `timelines/sample.timeline.json` in that order. If neither exists, it takes the first `*.timeline.json` filename in `timelines/` in ascending UTF-16 code unit order (case-sensitive and locale-independent).
+
 ## MVP Pipeline
 
 ```txt

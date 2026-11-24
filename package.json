@@ -12,7 +12,7 @@
     "dev:doctor": "node scripts/typecheck.mjs",
     "dev:fixture": "node scripts/create-fixture.mjs",
     "dev:sample-media": "node scripts/create-sample-media.mjs",
-    "test:henshusha": "node scripts/build.mjs && node scripts/verify-henshusha-cli-entry.mjs && node scripts/verify-agent-prompt.mjs && node scripts/verify-henshusha-init.mjs && node scripts/verify-remotion-props.mjs",
+    "test:henshusha": "node scripts/build.mjs && node scripts/verify-henshusha-cli-entry.mjs && node scripts/verify-agent-prompt.mjs && node scripts/verify-henshusha-init.mjs && node scripts/verify-remotion-props.mjs && node scripts/verify-timeline-selection.mjs",
     "test:package-build": "node scripts/verify-package-build.mjs",
     "test:timeline-schema": "node scripts/verify-timeline-schema.mjs",
     "test:dependabot-config": "node scripts/verify-dependabot-config.mjs",

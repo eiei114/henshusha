@@ -510,7 +510,7 @@ async function findTimelinePath(projectRoot: string, explicit?: string): Promise
     if (await exists(candidate)) return candidate;
   }
   const timelinesDir = path.join(projectRoot, "timelines");
-  const first = (await readdir(timelinesDir)).find((entry) => entry.endsWith(".timeline.json"));
+  const first = (await readdir(timelinesDir)).sort().find((entry) => entry.endsWith(".timeline.json"));
   if (!first) throw new Error(`No timeline found under ${timelinesDir}`);
   return path.join(timelinesDir, first);
 }
