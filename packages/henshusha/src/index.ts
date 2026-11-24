@@ -835,8 +835,7 @@ function buildRenderPlan(projectRoot: string, timelinePath: string, timeline: Ti
   };
 }
 
-async function writeRenderPlan(projectRoot: string, timelinePath: string, timeline: Timeline, output: string, planOutput?: string): Promise<string> {
-  const hasAudio = await probeHasAudio(primarySourcePath(projectRoot, timeline));
+async function writeRenderPlan(projectRoot: string, timelinePath: string, timeline: Timeline, output: string, hasAudio: boolean, planOutput?: string): Promise<string> {
   const textFiles = await writeOverlayTextFiles(projectRoot, timeline);
   const ffmpegArgs = buildFfmpegArgs(projectRoot, timeline, output, hasAudio, textFiles);
   const planPath = projectPath(projectRoot, planOutput ?? "jobs/render-plan.json");
@@ -891,7 +890,7 @@ async function renderProject(argv: string[]): Promise<void> {
   const hasAudio = await probeHasAudio(primarySourcePath(projectRoot, timeline));
   if (!hasAudio) console.warn("Warning: source has no audio stream; rendering video-only output");
   if (hasFlag(argv, "--dry-run")) {
-    const planPath = await writeRenderPlan(projectRoot, timelinePath, timeline, output, parseOption(argv, "--plan-output"));
+    const planPath = await writeRenderPlan(projectRoot, timelinePath, timeline, output, hasAudio, parseOption(argv, "--plan-output"));
     console.log(`Wrote render plan: ${path.relative(process.cwd(), planPath)}`);
     return;
   }
